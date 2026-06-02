@@ -1,0 +1,23 @@
+{% extends 'base_cabinet.html' %}
+{% block title %}{{ title }} — ZooHotel{% endblock %}
+{% block cabinet_content %}
+<h2 class="page-title"><i class="fa-solid fa-paw"></i> {{ title }}</h2>
+<div class="card" style="max-width:520px;">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% for field in form %}
+      <div class="form-group">
+        <label class="form-label">{{ field.label }}{% if field.field.required %}<span class="req">*</span>{% endif %}</label>
+        {{ field }}
+        {% if field.errors %}<div class="invalid-feedback" style="display:block;">{{ field.errors.0 }}</div>{% endif %}
+      </div>
+      {% endfor %}
+      <div style="display:flex;gap:.75rem;margin-top:.5rem;">
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Сохранить</button>
+        <a href="{% url 'cabinet_animals' %}" class="btn btn-secondary">Отмена</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

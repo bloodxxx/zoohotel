@@ -1,0 +1,34 @@
+{% extends 'base_admin.html' %}
+{% block title %}Клиенты — ZooHotel{% endblock %}
+{% block topbar_title %}Клиенты{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h1 class="page-title" style="margin:0;"><i class="fa-solid fa-users"></i> Клиенты</h1>
+</div>
+<div class="table-card">
+  <div class="table-toolbar">
+    <form method="get" style="display:flex;gap:.5rem;">
+      <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Имя, телефон, email..." style="width:260px;">
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-magnifying-glass"></i></button>
+      <a href="{% url 'clients_admin' %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-xmark"></i></a>
+    </form>
+  </div>
+  <table>
+    <thead><tr><th>ФИО</th><th>Телефон</th><th>Email</th><th>Животных</th><th>Бронирований</th><th></th></tr></thead>
+    <tbody>
+      {% for c in clients %}
+      <tr>
+        <td><a href="{% url 'client_detail' c.pk %}">{{ c.full_name }}</a></td>
+        <td>{{ c.phone }}</td>
+        <td>{{ c.email }}</td>
+        <td>{{ c.animals.count }}</td>
+        <td>{{ c.bookings.count }}</td>
+        <td><a href="{% url 'client_detail' c.pk %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-eye"></i></a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted);">Клиентов не найдено</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

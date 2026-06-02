@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Регистрация — ZooHotel{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:center;padding:2rem;">
+  <div class="card" style="width:100%;max-width:520px;">
+    <div class="card-header" style="justify-content:center;flex-direction:column;text-align:center;padding:1.5rem;">
+      <div style="width:52px;height:52px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:var(--primary);margin:0 auto .75rem;">
+        <i class="fa-regular fa-user"></i>
+      </div>
+      <div style="font-size:1.2rem;font-weight:700;">Создать аккаунт</div>
+    </div>
+    <div class="card-body">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          {% for field in form %}
+          {% if field.name in 'first_name,last_name' %}
+            <div class="form-group">
+              <label class="form-label">{{ field.label }} <span class="req">*</span></label>
+              {{ field }}
+              {% if field.errors %}<div class="invalid-feedback" style="display:block;">{{ field.errors.0 }}</div>{% endif %}
+            </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+        {% for field in form %}
+          {% if field.name not in 'first_name,last_name,agree' %}
+          <div class="form-group">
+            <label class="form-label">{{ field.label }} <span class="req">*</span></label>
+            {{ field }}
+            {% if field.errors %}<div class="invalid-feedback" style="display:block;">{{ field.errors.0 }}</div>{% endif %}
+          </div>
+          {% endif %}
+        {% endfor %}
+        <div class="form-group" style="display:flex;align-items:flex-start;gap:.6rem;margin-bottom:1rem;">
+          {{ form.agree }}
+          <label for="{{ form.agree.id_for_label }}" style="font-size:.88rem;cursor:pointer;line-height:1.4;">
+            {{ form.agree.label }} <span class="req">*</span>
+          </label>
+        </div>
+        {% if form.agree.errors %}<div class="invalid-feedback" style="display:block;margin-top:-.5rem;margin-bottom:.75rem;">{{ form.agree.errors.0 }}</div>{% endif %}
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">
+          <i class="fa-solid fa-user-plus"></i> Зарегистрироваться
+        </button>
+      </form>
+    </div>
+    <div class="card-footer" style="text-align:center;font-size:.85rem;">
+      Уже есть аккаунт? <a href="{% url 'login' %}">Войти</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

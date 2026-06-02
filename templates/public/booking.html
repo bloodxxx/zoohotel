@@ -1,0 +1,342 @@
+{% extends 'base.html' %}
+{% block title %}Бронирование — ZooHotel{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+.flatpickr-input { cursor: pointer; }
+.flatpickr-calendar { font-family: 'Inter', sans-serif; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,.15); border: none; }
+.flatpickr-day.selected, .flatpickr-day.selected:hover { background: var(--primary); border-color: var(--primary); }
+.flatpickr-day:hover { background: var(--primary-light); color: var(--primary); }
+.flatpickr-months .flatpickr-month { background: var(--primary); color: #fff; border-radius: 12px 12px 0 0; }
+.flatpickr-current-month .flatpickr-monthDropdown-months { color: #fff; }
+.flatpickr-current-month input.cur-year { color: #fff; }
+.flatpickr-weekday { color: var(--muted); font-weight: 600; }
+.flatpickr-day.inRange { background: var(--primary-light); border-color: var(--primary-light); color: var(--primary); }
+
+/* Date input custom look */
+.date-input-wrap { position: relative; }
+.date-input-wrap i { position: absolute; left: .75rem; top: 50%; transform: translateY(-50%); color: var(--primary); pointer-events: none; font-size: .95rem; }
+.date-input-wrap .form-control { padding-left: 2.2rem; }
+
+/* Room selection cards */
+.room-select-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .75rem; margin-top: .5rem; }
+.room-radio { display: none; }
+.room-select-card {
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all .15s;
+  background: var(--white);
+  position: relative;
+}
+.room-select-card:hover { border-color: var(--primary); background: var(--primary-light); }
+.room-radio:checked + .room-select-card {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  box-shadow: 0 0 0 3px rgba(27,107,71,.15);
+}
+.room-radio:checked + .room-select-card .room-card-check { opacity: 1; }
+.room-card-check {
+  position: absolute;
+  top: .6rem; right: .6rem;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .65rem;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.room-card-icon { font-size: 1.6rem; color: var(--primary); margin-bottom: .5rem; }
+.room-card-name { font-weight: 700; font-size: .9rem; color: var(--dark); }
+.room-card-type { font-size: .75rem; color: var(--muted); margin: .1rem 0 .4rem; }
+.room-card-price { font-size: .95rem; font-weight: 700; color: var(--primary); }
+
+/* Service cards */
+.svc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: .6rem; margin-top: .5rem; }
+.svc-check-input { display: none; }
+.svc-card {
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: .75rem .9rem;
+  cursor: pointer;
+  transition: all .15s;
+  background: var(--white);
+  display: flex;
+  align-items: flex-start;
+  gap: .6rem;
+}
+.svc-card:hover { border-color: var(--primary); }
+.svc-check-input:checked + .svc-card {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+.svc-check-input:checked + .svc-card .svc-card-dot {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.svc-check-input:checked + .svc-card .svc-card-dot::after { opacity: 1; }
+.svc-card-dot {
+  width: 18px; height: 18px;
+  border-radius: 4px;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+  margin-top: .1rem;
+  transition: all .15s;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+}
+.svc-card-dot::after {
+  content: '\f00c';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  font-size: .6rem;
+  color: #fff;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.svc-card-name { font-size: .84rem; font-weight: 600; color: var(--dark); line-height: 1.3; }
+.svc-card-price { font-size: .78rem; color: var(--primary); font-weight: 700; margin-top: .15rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="padding:2.5rem 1.5rem;">
+  <h1 class="page-title"><i class="fa-solid fa-calendar-plus"></i> Онлайн-бронирование</h1>
+  <p style="color:var(--muted);margin-bottom:2rem;">Заполните форму и мы свяжемся с вами для подтверждения</p>
+
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;align-items:start;">
+    <div>
+      <form method="post" novalidate id="booking-form">
+        {% csrf_token %}
+
+        <!-- Client data -->
+        <div class="card mb-2">
+          <div class="card-header"><i class="fa-regular fa-user" style="color:var(--primary);"></i> Ваши данные</div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+              {% for field in form %}{% if field.name in 'full_name,phone,email' %}
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">{{ field.label }}{% if field.field.required %}<span class="req">*</span>{% endif %}</label>
+                {{ field }}
+                {% if field.errors %}<div class="invalid-feedback" style="display:block;">{{ field.errors.0 }}</div>{% endif %}
+              </div>
+              {% endif %}{% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Animal data -->
+        <div class="card mb-2">
+          <div class="card-header"><i class="fa-solid fa-paw" style="color:var(--primary);"></i> Питомец</div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+              {% for field in form %}{% if field.name in 'animal_name,animal_species,animal_breed,special_needs' %}
+              <div class="form-group" style="margin-bottom:0;{% if field.name == 'special_needs' %}grid-column:1/-1;{% endif %}">
+                <label class="form-label">{{ field.label }}{% if field.field.required %}<span class="req">*</span>{% endif %}</label>
+                {{ field }}
+                {% if field.errors %}<div class="invalid-feedback" style="display:block;">{{ field.errors.0 }}</div>{% endif %}
+              </div>
+              {% endif %}{% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Dates -->
+        <div class="card mb-2">
+          <div class="card-header"><i class="fa-regular fa-calendar" style="color:var(--primary);"></i> Даты проживания</div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Дата и время заезда <span class="req">*</span></label>
+                <div class="date-input-wrap">
+                  <i class="fa-regular fa-calendar-plus"></i>
+                  <input type="text" id="id_check_in_date" name="check_in_date"
+                    class="form-control flatpickr-input" placeholder="Выберите дату и время"
+                    value="{{ form.check_in_date.value|default:'' }}" readonly>
+                </div>
+                {% if form.check_in_date.errors %}<div class="invalid-feedback" style="display:block;">{{ form.check_in_date.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Дата и время выезда <span class="req">*</span></label>
+                <div class="date-input-wrap">
+                  <i class="fa-regular fa-calendar-minus"></i>
+                  <input type="text" id="id_check_out_date" name="check_out_date"
+                    class="form-control flatpickr-input" placeholder="Выберите дату и время"
+                    value="{{ form.check_out_date.value|default:'' }}" readonly>
+                </div>
+                {% if form.check_out_date.errors %}<div class="invalid-feedback" style="display:block;">{{ form.check_out_date.errors.0 }}</div>{% endif %}
+              </div>
+            </div>
+            <div id="nights-display" style="margin-top:.75rem;font-size:.85rem;color:var(--muted);"></div>
+          </div>
+        </div>
+
+        <!-- Room selection cards -->
+        <div class="card mb-2">
+          <div class="card-header"><i class="fa-solid fa-house" style="color:var(--primary);"></i> Выберите номер</div>
+          <div class="card-body">
+            {% if form.room.errors %}<div class="invalid-feedback" style="display:block;margin-bottom:.5rem;">{{ form.room.errors.0 }}</div>{% endif %}
+            <div class="room-select-grid">
+              {% for room in rooms %}
+              <label>
+                <input type="radio" name="room" value="{{ room.pk }}" class="room-radio"
+                  id="room_{{ room.pk }}"
+                  {% if selected_room_id == room.pk|stringformat:'s' or form.room.value == room.pk|stringformat:'s' %}checked{% endif %}
+                  data-price="{{ room.price_per_day }}">
+                <div class="room-select-card">
+                  <div class="room-card-check"><i class="fa-solid fa-check"></i></div>
+                  <div class="room-card-icon">
+                    {% if room.type == 'economy' %}<i class="fa-solid fa-house-chimney"></i>
+                    {% elif room.type == 'standard' %}<i class="fa-solid fa-house-chimney-window"></i>
+                    {% else %}<i class="fa-solid fa-star"></i>{% endif %}
+                  </div>
+                  <div class="room-card-name">{{ room.name }}</div>
+                  <div class="room-card-type">{{ room.get_type_display }}</div>
+                  {% if room.description %}<div style="font-size:.7rem;color:var(--muted);margin:.2rem 0 .3rem;line-height:1.4;">{{ room.description|truncatechars:60 }}</div>{% endif %}
+                  <div class="room-card-price">{{ room.price_per_day|floatformat:0 }} ₽<span style="font-weight:400;font-size:.75rem;color:var(--muted);"> / сут.</span></div>
+                </div>
+              </label>
+              {% empty %}
+              <p style="color:var(--muted);font-size:.88rem;">Нет доступных номеров</p>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Services -->
+        <div class="card mb-2">
+          <div class="card-header"><i class="fa-solid fa-list-check" style="color:var(--primary);"></i> Дополнительные услуги <span style="font-size:.78rem;color:var(--muted);font-weight:400;">(необязательно)</span></div>
+          <div class="card-body">
+            {% regroup services by category as svc_by_cat %}
+            {% for cat in svc_by_cat %}
+            <div style="margin-bottom:1rem;">
+              <div style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem;">{{ cat.grouper }}</div>
+              <div class="svc-grid">
+                {% for svc in cat.list %}
+                <label>
+                  <input type="checkbox" name="services" value="{{ svc.pk }}" class="svc-check-input svc-check"
+                    id="svc_{{ svc.pk }}" data-price="{{ svc.price }}"
+                    {% if svc.pk|stringformat:'s' in form.services.value|default:'' %}checked{% endif %}>
+                  <div class="svc-card">
+                    <div class="svc-card-dot"></div>
+                    <div>
+                      <div class="svc-card-name">{{ svc.name }}</div>
+                      <div class="svc-card-price">{{ svc.price|floatformat:0 }} ₽ / {{ svc.unit }}</div>
+                    </div>
+                  </div>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;font-size:1rem;padding:.75rem;">
+          <i class="fa-solid fa-paper-plane"></i> Отправить заявку
+        </button>
+      </form>
+    </div>
+
+    <!-- Sticky price calculator -->
+    <div style="position:sticky;top:84px;">
+      <div class="card">
+        <div class="card-header"><i class="fa-solid fa-calculator" style="color:var(--primary);"></i> Стоимость</div>
+        <div class="card-body">
+          <div id="calc-price" style="font-size:1.4rem;font-weight:800;color:var(--primary);margin-bottom:.25rem;">Выберите номер и даты</div>
+          <div id="calc-detail" style="font-size:.82rem;color:var(--muted);line-height:1.9;"></div>
+          <div class="divider"></div>
+          <div style="font-size:.82rem;color:var(--muted);line-height:1.9;">
+            <div><i class="fa-solid fa-circle-check" style="color:var(--success);"></i> Подтверждение в течение 1 часа</div>
+            <div><i class="fa-solid fa-circle-check" style="color:var(--success);"></i> Уход 24/7</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
+<script>
+flatpickr.localize(flatpickr.l10ns.ru);
+
+const ciPicker = flatpickr('#id_check_in_date', {
+  enableTime: true,
+  dateFormat: 'Y-m-d H:i',
+  altInput: true,
+  altFormat: 'j F Y, H:i',
+  minDate: 'today',
+  time_24hr: true,
+  onChange: function(dates) {
+    if (dates[0]) {
+      coPicker.set('minDate', dates[0]);
+    }
+    calcPrice();
+  }
+});
+
+const coPicker = flatpickr('#id_check_out_date', {
+  enableTime: true,
+  dateFormat: 'Y-m-d H:i',
+  altInput: true,
+  altFormat: 'j F Y, H:i',
+  minDate: 'today',
+  time_24hr: true,
+  onChange: calcPrice
+});
+
+function calcPrice() {
+  const roomInput = document.querySelector('input[name="room"]:checked');
+  const ci = ciPicker.selectedDates[0];
+  const co = coPicker.selectedDates[0];
+  const priceEl = document.getElementById('calc-price');
+  const detailEl = document.getElementById('calc-detail');
+  const nightsEl = document.getElementById('nights-display');
+
+  if (!ci || !co || co <= ci) {
+    if (nightsEl) nightsEl.textContent = '';
+    if (roomInput && (!ci || !co)) {
+      priceEl.textContent = 'Выберите даты';
+      detailEl.textContent = '';
+    }
+    return;
+  }
+
+  const nights = Math.max(Math.ceil((co - ci) / 86400000), 1);
+  const word = nights % 10 === 1 && nights % 100 !== 11 ? 'ночь' :
+               [2,3,4].includes(nights % 10) && ![12,13,14].includes(nights % 100) ? 'ночи' : 'ночей';
+  if (nightsEl) nightsEl.innerHTML = '<i class="fa-solid fa-moon" style="color:var(--primary);"></i> ' + nights + ' ' + word;
+
+  if (!roomInput) { priceEl.textContent = 'Выберите номер'; detailEl.textContent = ''; return; }
+
+  const pricePerDay = parseFloat(roomInput.dataset.price || 0);
+  const roomCost = pricePerDay * nights;
+
+  let svcTotal = 0;
+  let svcLines = [];
+  document.querySelectorAll('.svc-check:checked').forEach(cb => {
+    const p = parseFloat(cb.dataset.price || 0);
+    svcTotal += p;
+    const label = cb.closest('label').querySelector('.svc-card-name');
+    if (label) svcLines.push(label.textContent + ': ' + p.toLocaleString('ru-RU') + ' ₽');
+  });
+
+  const total = roomCost + svcTotal;
+  priceEl.textContent = total.toLocaleString('ru-RU') + ' ₽';
+
+  let detail = 'Номер: ' + roomCost.toLocaleString('ru-RU') + ' ₽ (' + nights + ' ' + word + ')';
+  if (svcLines.length) detail += '<br>' + svcLines.join('<br>');
+  detailEl.innerHTML = detail;
+}
+
+document.querySelectorAll('input[name="room"]').forEach(r => r.addEventListener('change', calcPrice));
+document.querySelectorAll('.svc-check').forEach(cb => cb.addEventListener('change', calcPrice));
+calcPrice();
+</script>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends 'base_admin.html' %}
+{% block title %}{{ animal.name }} — ZooHotel{% endblock %}
+{% block topbar_title %}Животное: {{ animal.name }}{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h1 class="page-title" style="margin:0;"><i class="fa-solid fa-paw"></i> {{ animal.name }}</h1>
+  <a href="{% url 'animals_admin' %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-arrow-left"></i> Назад</a>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+  <div>
+    <div class="card mb-2">
+      <div class="card-header"><i class="fa-solid fa-pen" style="color:var(--primary);"></i> Карточка животного</div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% for field in form %}
+          <div class="form-group">
+            <label class="form-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<div class="invalid-feedback" style="display:block;">{{ field.errors.0 }}</div>{% endif %}
+          </div>
+          {% endfor %}
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Сохранить</button>
+        </form>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span><i class="fa-solid fa-file" style="color:var(--primary);"></i> Документы</span>
+      </div>
+      <div class="card-body">
+        <form method="post" action="{% url 'animal_document_upload' animal.pk %}" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div style="display:flex;gap:.5rem;align-items:flex-end;">
+            <div class="form-group" style="flex:1;margin:0;">
+              <label class="form-label">Тип документа</label>
+              <input type="text" name="document_type" class="form-control" placeholder="Ветпаспорт, справка..." required>
+            </div>
+            <div class="form-group" style="flex:1;margin:0;">
+              <label class="form-label">Файл</label>
+              <input type="file" name="file" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-upload"></i></button>
+          </div>
+        </form>
+        {% if documents %}
+        <div style="margin-top:1rem;">
+          {% for doc in documents %}
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-top:1px solid var(--border);">
+            <div>
+              <div style="font-weight:600;font-size:.88rem;">{{ doc.document_type }}</div>
+              <div style="font-size:.78rem;color:var(--muted);">{{ doc.uploaded_at|date:"d.m.Y" }}</div>
+            </div>
+            <a href="{{ doc.file.url }}" target="_blank" class="btn btn-secondary btn-sm"><i class="fa-solid fa-download"></i></a>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <div class="card-header"><i class="fa-solid fa-circle-info" style="color:var(--primary);"></i> Информация</div>
+      <div class="card-body">
+        <div class="info-row"><span class="label">Владелец</span> <a href="{% url 'client_detail' animal.client.pk %}">{{ animal.client.full_name }}</a></div>
+        <div class="info-row"><span class="label">Вид</span> {{ animal.get_species_display }}</div>
+        {% if animal.breed %}<div class="info-row"><span class="label">Порода</span> {{ animal.breed }}</div>{% endif %}
+        {% if animal.birth_date %}<div class="info-row"><span class="label">Дата рождения</span> {{ animal.birth_date|date:"d.m.Y" }}</div>
+        <div class="info-row"><span class="label">Возраст</span> {{ animal.age }}</div>{% endif %}
+        {% if animal.special_needs %}
+        <div style="margin-top:1rem;padding:.75rem;background:var(--accent-light);border-radius:8px;color:#92400e;">
+          <div style="font-weight:700;margin-bottom:.35rem;"><i class="fa-solid fa-triangle-exclamation"></i> Особые отметки</div>
+          <div style="font-size:.88rem;">{{ animal.special_needs }}</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

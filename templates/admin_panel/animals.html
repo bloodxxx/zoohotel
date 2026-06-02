@@ -1,0 +1,36 @@
+{% extends 'base_admin.html' %}
+{% block title %}Животные — ZooHotel{% endblock %}
+{% block topbar_title %}Животные{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h1 class="page-title" style="margin:0;"><i class="fa-solid fa-dog"></i> Животные</h1>
+</div>
+<div class="table-card">
+  <div class="table-toolbar">
+    <form method="get" style="display:flex;gap:.5rem;">
+      <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Кличка или владелец..." style="width:260px;">
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-magnifying-glass"></i></button>
+      <a href="{% url 'animals_admin' %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-xmark"></i></a>
+    </form>
+  </div>
+  <table>
+    <thead><tr><th>Кличка</th><th>Вид</th><th>Порода</th><th>Владелец</th><th>Особые отметки</th><th></th></tr></thead>
+    <tbody>
+      {% for a in animals %}
+      <tr>
+        <td><a href="{% url 'animal_detail' a.pk %}">{{ a.name }}</a></td>
+        <td>{{ a.get_species_display }}</td>
+        <td>{{ a.breed|default:"—" }}</td>
+        <td><a href="{% url 'client_detail' a.client.pk %}">{{ a.client.full_name }}</a></td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          {% if a.special_needs %}<span style="color:var(--warning);"><i class="fa-solid fa-triangle-exclamation"></i></span> {{ a.special_needs|truncatechars:40 }}{% else %}—{% endif %}
+        </td>
+        <td><a href="{% url 'animal_detail' a.pk %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-eye"></i></a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted);">Животных не найдено</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

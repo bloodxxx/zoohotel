@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Номера и вольеры — ZooHotel{% endblock %}
+{% block content %}
+<div class="container" style="padding:3rem 1.75rem;">
+  <div style="margin-bottom:2rem;">
+    <h1 style="font-size:2rem;font-weight:800;color:var(--dark);letter-spacing:-.3px;margin-bottom:.4rem;"><i class="fa-solid fa-house" style="color:var(--primary);"></i> Номера и вольеры</h1>
+    <p style="color:var(--muted);font-size:1rem;">Выберите подходящий вариант размещения для вашего питомца</p>
+  </div>
+
+  {% if grouped %}
+  {% for group in grouped %}
+  <div style="margin-bottom:2.5rem;">
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;">
+      <h2 style="font-size:1.3rem;font-weight:800;color:var(--dark);margin:0;">
+        {% if group.type == 'economy' %}<i class="fa-solid fa-house-chimney" style="color:var(--primary);"></i>
+        {% elif group.type == 'standard' %}<i class="fa-solid fa-house-chimney-window" style="color:var(--primary);"></i>
+        {% else %}<i class="fa-solid fa-star" style="color:var(--primary);"></i>{% endif %}
+        {{ group.label }}
+      </h2>
+      <span style="background:var(--primary-light);color:var(--primary);border-radius:12px;padding:.2rem .7rem;font-size:.8rem;font-weight:700;">{{ group.count }} номер{{ group.count|pluralize:",,а,ов" }}</span>
+    </div>
+    <div class="grid grid-3">
+      {% for room in group.rooms %}
+      <div class="room-card">
+        <a href="{% url 'room_detail' room.pk %}" style="display:block;color:inherit;">
+          <div class="room-card-img">
+            {% if room.image %}
+            <img src="{{ room.image.url }}" alt="{{ room.name }}">
+            <div class="room-card-img-overlay"></div>
+            {% else %}
+            {% if room.type == 'economy' %}<i class="fa-solid fa-house-chimney"></i>
+            {% elif room.type == 'standard' %}<i class="fa-solid fa-house-chimney-window"></i>
+            {% else %}<i class="fa-solid fa-star"></i>{% endif %}
+            {% endif %}
+            <div class="room-card-badges">
+              <span class="room-badge badge-{{ room.status }}" {% if room.image %}style="background:rgba(255,255,255,.92);"{% endif %}>{{ room.get_status_display }}</span>
+            </div>
+          </div>
+        </a>
+        <div class="room-card-body">
+          <h3 style="font-size:1.05rem;font-weight:700;margin:0 0 .4rem;">
+            <a href="{% url 'room_detail' room.pk %}" style="color:var(--dark);">{{ room.name }}</a>
+          </h3>
+          {% if room.description %}
+          <p style="font-size:.84rem;color:var(--muted);margin:0 0 1rem;line-height:1.6;">{{ room.description|truncatechars:90 }}</p>
+          {% endif %}
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:.9rem;border-top:1px solid var(--border);">
+            <span class="price-tag">{{ room.price_per_day|floatformat:0 }} ₽<span style="font-size:.78rem;font-weight:500;color:var(--muted);"> / сут.</span></span>
+            <div style="display:flex;gap:.4rem;">
+              <a href="{% url 'room_detail' room.pk %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-circle-info"></i> Подробнее</a>
+              {% if room.status == 'available' %}
+              <a href="{% url 'booking' %}?room={{ room.pk }}" class="btn btn-primary btn-sm btn-pill"><i class="fa-solid fa-calendar-plus"></i> Бронировать</a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+  {% else %}
+  <div class="empty-state"><i class="fa-solid fa-house"></i><p>Номера пока не добавлены</p></div>
+  {% endif %}
+</div>
+{% endblock %}

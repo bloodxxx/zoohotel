@@ -1,0 +1,24 @@
+{% extends 'base_admin.html' %}
+{% block title %}Журнал действий — ZooHotel{% endblock %}
+{% block topbar_title %}Журнал действий{% endblock %}
+{% block content %}
+<h1 class="page-title"><i class="fa-solid fa-clock-rotate-left"></i> Журнал действий</h1>
+<div class="table-card">
+  <table>
+    <thead><tr><th>Дата/время</th><th>Пользователь</th><th>Действие</th><th>Объект</th><th>Результат</th></tr></thead>
+    <tbody>
+      {% for log in logs %}
+      <tr>
+        <td style="white-space:nowrap;font-size:.82rem;">{{ log.created_at|date:"d.m.Y H:i:s" }}</td>
+        <td>{{ log.user.username|default:"—" }}</td>
+        <td>{{ log.action }}</td>
+        <td style="font-size:.82rem;color:var(--muted);">{% if log.entity_type %}{{ log.entity_type }} #{{ log.entity_id }}{% else %}—{% endif %}</td>
+        <td><span class="status-badge {% if log.result == 'ok' %}badge-confirmed{% else %}badge-cancelled{% endif %}">{{ log.result }}</span></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted);">Журнал пуст</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

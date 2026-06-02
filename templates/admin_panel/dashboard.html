@@ -1,0 +1,105 @@
+{% extends 'base_admin.html' %}
+{% block title %}Дашборд — ZooHotel{% endblock %}
+{% block topbar_title %}Дашборд{% endblock %}
+{% block content %}
+<h1 class="page-title"><i class="fa-solid fa-gauge"></i> Дашборд</h1>
+
+<div class="grid grid-4 mb-3">
+  <div class="stat-card">
+    <div class="stat-icon green"><i class="fa-solid fa-house"></i></div>
+    <div>
+      <div class="stat-value">{{ occupancy }}%</div>
+      <div class="stat-label">Загрузка номеров</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon amber"><i class="fa-solid fa-clock"></i></div>
+    <div>
+      <div class="stat-value">{{ pending_bookings }}</div>
+      <div class="stat-label">Ожидают подтверждения</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon blue"><i class="fa-solid fa-ruble-sign"></i></div>
+    <div>
+      <div class="stat-value">{{ revenue_today|floatformat:0 }} ₽</div>
+      <div class="stat-label">Выручка сегодня</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green"><i class="fa-solid fa-list-check"></i></div>
+    <div>
+      <div class="stat-value">{{ active_tasks }}</div>
+      <div class="stat-label">Активных задач</div>
+    </div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+  <div class="card">
+    <div class="card-header">
+      <span><i class="fa-solid fa-calendar-arrow-down" style="color:var(--primary);"></i> Заезды сегодня</span>
+      <a href="{% url 'bookings_admin' %}" class="btn btn-secondary btn-sm">Все</a>
+    </div>
+    {% if today_checkins %}
+    <table>
+      <thead><tr><th>Животное</th><th>Клиент</th><th>Номер</th><th>Статус</th></tr></thead>
+      <tbody>
+        {% for b in today_checkins %}
+        <tr>
+          <td><a href="{% url 'booking_detail' b.pk %}">{{ b.animal.name }}</a></td>
+          <td>{{ b.client.full_name }}</td>
+          <td>{{ b.room.name }}</td>
+          <td><span class="status-badge badge-{{ b.status }}">{{ b.get_status_display }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><i class="fa-solid fa-calendar-check"></i><p>Заездов сегодня нет</p></div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span><i class="fa-solid fa-clock-rotate-left" style="color:var(--primary);"></i> Последние бронирования</span>
+      <a href="{% url 'booking_create' %}" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i> Новое</a>
+    </div>
+    <table>
+      <thead><tr><th>Бронь</th><th>Животное</th><th>Статус</th><th>Сумма</th></tr></thead>
+      <tbody>
+        {% for b in recent_bookings %}
+        <tr>
+          <td><a href="{% url 'booking_detail' b.pk %}">#{{ b.pk }}</a></td>
+          <td>{{ b.animal.name }}</td>
+          <td><span class="status-badge badge-{{ b.status }}">{{ b.get_status_display }}</span></td>
+          <td>{{ b.total_price|floatformat:0 }} ₽</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card mt-3">
+  <div class="card-header"><span><i class="fa-solid fa-chart-bar" style="color:var(--primary);"></i> Загрузка номеров</span></div>
+  <div class="card-body">
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <div style="flex:1;">
+        <div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:.4rem;">
+          <span>Занято: {{ occupied }} из {{ total_rooms }}</span>
+          <span style="font-weight:600;">{{ occupancy }}%</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" style="width:{% if occupancy > 100 %}100{% else %}{{ occupancy }}{% endif %}%;{% if occupancy >= 100 %}background:var(--danger,#ef4444);{% endif %}"></div>
+        </div>
+        {% if occupancy >= 100 %}<div style="font-size:.78rem;color:#ef4444;margin-top:.3rem;"><i class="fa-solid fa-triangle-exclamation"></i> Все номера заняты</div>{% endif %}
+      </div>
+      <div style="text-align:center;font-size:.82rem;color:var(--muted);">
+        <div style="font-size:1.5rem;font-weight:700;color:var(--primary);">{{ available_rooms }}</div>
+        <div>свободных</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

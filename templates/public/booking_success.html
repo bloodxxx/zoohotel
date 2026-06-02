@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Заявка принята — ZooHotel{% endblock %}
+{% block content %}
+<div class="container" style="padding:4rem 1.5rem;text-align:center;">
+  <div style="width:80px;height:80px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:2rem;color:var(--primary);margin:0 auto 1.5rem;">
+    <i class="fa-solid fa-circle-check"></i>
+  </div>
+
+  {% if done %}
+    <h1 style="font-size:2rem;font-weight:700;color:var(--dark);margin-bottom:.75rem;">Способ оплаты выбран!</h1>
+    <p style="color:var(--muted);max-width:480px;margin:0 auto 1.5rem;line-height:1.7;">
+      Бронь #{{ booking.pk }} — оплата: <strong>{{ method_label }}</strong>.<br>
+      Менеджер свяжется с вами для подтверждения.
+    </p>
+    <a href="{% url 'home' %}" class="btn btn-primary"><i class="fa-solid fa-house"></i> На главную</a>
+
+  {% elif booking and payment %}
+    <h1 style="font-size:2rem;font-weight:700;color:var(--dark);margin-bottom:.75rem;">Заявка принята!</h1>
+    <p style="color:var(--muted);max-width:480px;margin:0 auto 1.5rem;line-height:1.7;">
+      Бронь #{{ booking.pk }} создана и ожидает подтверждения.<br>
+      Выберите удобный способ оплаты:
+    </p>
+    <div style="max-width:400px;margin:0 auto;text-align:left;">
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:1.25rem;margin-bottom:1.25rem;font-size:.9rem;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:.4rem;"><span style="color:var(--muted);">Животное</span><span>{{ booking.animal.name }}</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:.4rem;"><span style="color:var(--muted);">Номер</span><span>{{ booking.room.name }}</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:.4rem;"><span style="color:var(--muted);">Заезд</span><span>{{ booking.check_in_date|date:"d.m.Y" }}</span></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">К оплате</span><strong style="color:var(--primary);">{{ payment.amount|floatformat:0 }} ₽</strong></div>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        {% for value, label in payment_methods %}
+        <label style="display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:.5rem;cursor:pointer;background:#fff;">
+          <input type="radio" name="payment_method" value="{{ value }}" {% if forloop.first %}checked{% endif %}>
+          <span>{{ label }}</span>
+        </label>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:.75rem;">
+          <i class="fa-solid fa-check"></i> Подтвердить способ оплаты
+        </button>
+      </form>
+      <div style="text-align:center;margin-top:1rem;">
+        <a href="{% url 'home' %}" style="color:var(--muted);font-size:.85rem;">Пропустить, выбрать позже</a>
+      </div>
+    </div>
+
+  {% else %}
+    <h1 style="font-size:2rem;font-weight:700;color:var(--dark);margin-bottom:.75rem;">Заявка принята!</h1>
+    <p style="color:var(--muted);max-width:480px;margin:0 auto 2rem;line-height:1.7;">Ваша заявка на бронирование создана и ожидает подтверждения. Наш менеджер свяжется с вами в ближайшее время.</p>
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+      <a href="{% url 'home' %}" class="btn btn-primary"><i class="fa-solid fa-house"></i> На главную</a>
+      <a href="{% url 'register' %}" class="btn btn-outline"><i class="fa-regular fa-user"></i> Зарегистрироваться</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

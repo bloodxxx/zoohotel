@@ -1,0 +1,440 @@
+import uuid
+import json
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
+from django.http import JsonResponse
+from django.urls import reverse
+from django.utils import timezone as tz
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.conf import settings
+from .models import Booking, BookingService, Animal, AnimalDocument, Service, Room, Payment
+from .forms import ClientBookingForm, AnimalForm, AnimalDocumentForm, ProfileForm, ClientForm
+from .decorators import client_required, log_action
+
+
+def get_client(request):
+    return getattr(request.user, 'client_profile', None)
+
+
+@client_required
+def cabinet_profile(request):
+    client = get_client(request)
+    if request.method == 'POST':
+        pform = ProfileForm(request.POST, instance=request.user)
+        cform = ClientForm(request.POST, instance=client)
+        if pform.is_valid() and cform.is_valid():
+            pform.save()
+            c = cform.save(commit=False)
+            c.full_name = f'{request.user.first_name} {request.user.last_name}'.strip() or request.user.username
+            c.email = request.user.email
+            c.save()
+            messages.success(request, 'Профиль успешно обновлён.')
+            return redirect('cabinet_profile')
+    else:
+        pform = ProfileForm(instance=request.user)
+        cform = ClientForm(instance=client)
+    return render(request, 'cabinet/profile.html', {'pform': pform, 'cform': cform, 'client': client})
+
+
+@client_required
+def cabinet_change_password(request):
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, 'Пароль успешно изменён.')
+            return redirect('cabinet_profile')
+        else:
+            messages.error(request, 'Пожалуйста, исправьте ошибки.')
+    else:
+        form = PasswordChangeForm(request.user)
+    return render(request, 'cabinet/change_password.html', {'form': form})
+
+
+@client_required
+def cabinet_animals(request):
+    client = get_client(request)
+    animals = client.animals.all() if client else []
+    return render(request, 'cabinet/animals.html', {'animals': animals})
+
+
+@client_required
+def cabinet_animal_add(request):
+    client = get_client(request)
+    if request.method == 'POST':
+        form = AnimalForm(request.POST)
+        if form.is_valid():
+            animal = form.save(commit=False)
+            animal.client = client
+            animal.save()
+            messages.success(request, f'Животное «{animal.name}» добавлено.')
+            return redirect('cabinet_animals')
+    else:
+        form = AnimalForm()
+    return render(request, 'cabinet/animal_form.html', {'form': form, 'title': 'Добавить животное'})
+
+
+@client_required
+def cabinet_animal_edit(request, pk):
+    client = get_client(request)
+    animal = get_object_or_404(Animal, pk=pk, client=client)
+    if request.method == 'POST':
+        form = AnimalForm(request.POST, instance=animal)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Данные животного обновлены.')
+            return redirect('cabinet_animals')
+    else:
+        form = AnimalForm(instance=animal)
+    return render(request, 'cabinet/animal_form.html', {'form': form, 'title': 'Редактировать животное', 'animal': animal})
+
+
+@client_required
+def cabinet_bookings(request):
+    client = get_client(request)
+    all_bookings = list(client.bookings.order_by('-check_in_date').prefetch_related('booking_services__service', 'tasks__service') if client else [])
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    if date_from:
+        from datetime import date as dt
+        all_bookings = [b for b in all_bookings if b.check_in_date.date() >= dt.fromisoformat(date_from)]
+    if date_to:
+        from datetime import date as dt
+        all_bookings = [b for b in all_bookings if b.check_in_date.date() <= dt.fromisoformat(date_to)]
+
+    # Attach service task statuses to each booking
+    for b in all_bookings:
+        task_by_svc = {}
+        for t in b.tasks.all():
+            if t.service_id:
+                task_by_svc[t.service_id] = t.status
+        svc_statuses = []
+        for bs in b.booking_services.all():
+            svc_statuses.append({
+                'name': bs.service.name,
+                'status': task_by_svc.get(bs.service_id, 'pending'),
+            })
+        b.svc_statuses = svc_statuses
+
+    active = [b for b in all_bookings if b.status in ('pending', 'confirmed')]
+    archive = [b for b in all_bookings if b.status in ('completed', 'cancelled')]
+    show_archive = request.GET.get('archive') == '1'
+    return render(request, 'cabinet/bookings.html', {
+        'bookings': archive if show_archive else active,
+        'show_archive': show_archive,
+        'active_count': len(active),
+        'archive_count': len(archive),
+        'date_from': date_from,
+        'date_to': date_to,
+    })
+
+
+@client_required
+def cabinet_new_booking(request):
+    client = get_client(request)
+    if not client:
+        messages.error(request, 'Профиль клиента не найден.')
+        return redirect('cabinet_profile')
+    if not client.animals.exists():
+        messages.warning(request, 'Сначала добавьте животное в личном кабинете.')
+        return redirect('cabinet_animal_add')
+
+    rooms = Room.objects.filter(status='available')
+    services = Service.objects.filter(status='active')
+
+    if request.method == 'POST':
+        form = ClientBookingForm(client, request.POST)
+        if form.is_valid():
+            cd = form.cleaned_data
+            room = cd['room']
+            ci = cd['check_in_date']
+            co = cd['check_out_date']
+            nights = max((co - ci).days, 1)
+            svc_list = cd.get('services', [])
+            total = room.price_per_day * nights + sum(s.price for s in svc_list)
+            booking = Booking.objects.create(
+                client=client, animal=cd['animal'], room=room,
+                check_in_date=ci, check_out_date=co,
+                status='pending', total_price=total,
+                notes=cd.get('notes', ''),
+                created_by=request.user,
+            )
+            for svc in svc_list:
+                BookingService.objects.create(booking=booking, service=svc, quantity=1, price=svc.price)
+            Payment.objects.create(
+                booking=booking, client=client,
+                amount=room.price_per_day,
+                payment_method='', status='unpaid',
+            )
+            log_action(request, 'Создано бронирование', 'Booking', booking.pk)
+            prepay = int(room.price_per_day)
+            messages.success(request, f'Бронирование #{booking.pk} создано. Предоплата: {prepay} ₽ (1 сутки).')
+            return redirect('cabinet_bookings')
+        else:
+            messages.error(request, 'Исправьте ошибки в форме.')
+    else:
+        form = ClientBookingForm(client)
+
+    return render(request, 'cabinet/new_booking.html', {
+        'form': form, 'rooms': rooms, 'services': services,
+    })
+
+
+@client_required
+def cabinet_rebook(request, pk):
+    client = get_client(request)
+    original = get_object_or_404(Booking, pk=pk, client=client)
+    from django.utils import timezone as tz
+    import datetime
+
+    if request.method == 'POST':
+        form = ClientBookingForm(client, request.POST)
+        if form.is_valid():
+            cd = form.cleaned_data
+            room = cd['room']
+            ci = cd['check_in_date']
+            co = cd['check_out_date']
+            nights = max((co - ci).days, 1)
+            svc_list = cd.get('services', [])
+            total = room.price_per_day * nights + sum(s.price for s in svc_list)
+            booking = Booking.objects.create(
+                client=client, animal=cd['animal'], room=room,
+                check_in_date=ci, check_out_date=co,
+                status='pending', total_price=total,
+                notes=cd.get('notes', ''),
+                created_by=request.user,
+            )
+            for svc in svc_list:
+                BookingService.objects.create(booking=booking, service=svc, quantity=1, price=svc.price)
+            Payment.objects.create(
+                booking=booking, client=client,
+                amount=room.price_per_day,
+                payment_method='', status='unpaid',
+            )
+            log_action(request, f'Повторное бронирование на основе #{pk}', 'Booking', booking.pk)
+            messages.success(request, f'Бронирование #{booking.pk} создано. Статус: Ожидание.')
+            return redirect('cabinet_bookings')
+        rooms = Room.objects.filter(status='available')
+        services = Service.objects.filter(status='active')
+        return render(request, 'cabinet/new_booking.html', {
+            'form': form, 'rooms': rooms, 'services': services, 'rebook': True,
+        })
+
+    service_ids = list(original.booking_services.values_list('service_id', flat=True))
+    ci = tz.now().strftime('%Y-%m-%d %H:%M')
+    co = (tz.now() + datetime.timedelta(days=original.nights())).strftime('%Y-%m-%d %H:%M')
+    initial = {
+        'animal': original.animal,
+        'room': original.room,
+        'check_in_date': ci,
+        'check_out_date': co,
+        'services': service_ids,
+        'notes': original.notes,
+    }
+    form = ClientBookingForm(client, initial=initial)
+    rooms = Room.objects.filter(status='available')
+    services = Service.objects.filter(status='active')
+    return render(request, 'cabinet/new_booking.html', {
+        'form': form, 'rooms': rooms, 'services': services, 'rebook': True,
+        'rebook_service_ids': service_ids,
+        'rebook_ci': ci, 'rebook_co': co,
+        'rebook_room_id': original.room_id,
+    })
+
+
+PAYMENT_METHODS = [
+    ('cash', 'Наличные при заезде'),
+    ('card', 'Карта при заезде'),
+]
+
+
+@client_required
+def cabinet_booking_delete(request, pk):
+    client = get_client(request)
+    booking = get_object_or_404(Booking, pk=pk, client=client)
+    if request.method == 'POST':
+        if booking.status in ('pending', 'confirmed'):
+            booking.status = 'cancelled'
+            booking.save(update_fields=['status'])
+            log_action(request, f'Клиент отменил бронирование #{pk}', 'Booking', pk)
+            messages.success(request, f'Бронирование #{pk} отменено.')
+        else:
+            messages.error(request, 'Невозможно отменить бронирование с текущим статусом.')
+    return redirect('cabinet_bookings')
+
+
+@client_required
+def cabinet_animal_delete(request, pk):
+    client = get_client(request)
+    animal = get_object_or_404(Animal, pk=pk, client=client)
+    if request.method == 'POST':
+        if animal.bookings.exists():
+            messages.error(request, 'Нельзя удалить животное с историей бронирований.')
+        else:
+            name = animal.name
+            animal.delete()
+            messages.success(request, f'Животное «{name}» удалено.')
+    return redirect('cabinet_animals')
+
+
+def api_available_rooms(request):
+    room_type = request.GET.get('type', '')
+    check_in = request.GET.get('check_in', '')
+    check_out = request.GET.get('check_out', '')
+    exclude_booking = request.GET.get('exclude', None)
+
+    rooms = Room.objects.filter(status='available')
+    if room_type:
+        rooms = rooms.filter(type=room_type)
+
+    result = []
+    for room in rooms:
+        available = True
+        if check_in and check_out:
+            try:
+                from django.utils.dateparse import parse_datetime
+                ci = parse_datetime(check_in)
+                co = parse_datetime(check_out)
+                if ci and co:
+                    available = room.is_available_for(ci, co, exclude_booking_id=int(exclude_booking) if exclude_booking else None)
+            except Exception:
+                pass
+        if available:
+            result.append({'id': room.pk, 'name': room.name, 'type': room.get_type_display(), 'price': str(room.price_per_day)})
+    return JsonResponse({'rooms': result})
+
+
+@client_required
+def cabinet_pay_yookassa(request, booking_pk):
+    """Инициирует онлайн-оплату через ЮKassa и перенаправляет на страницу оплаты."""
+    from yookassa import Configuration, Payment as YooPayment
+
+    client = get_client(request)
+    booking = get_object_or_404(Booking, pk=booking_pk, client=client)
+    payment = booking.payments.filter(status__in=['unpaid', 'pending']).first()
+    if not payment:
+        messages.info(request, 'Нет активного платежа для этого бронирования.')
+        return redirect('cabinet_bookings')
+
+    Configuration.account_id = settings.YOOKASSA_SHOP_ID
+    Configuration.secret_key = settings.YOOKASSA_SECRET_KEY
+
+    return_url = request.build_absolute_uri(
+        reverse('payment_return') + f'?payment_id={payment.pk}'
+    )
+
+    yoo_payment = YooPayment.create({
+        'amount': {
+            'value': f'{payment.amount:.2f}',
+            'currency': 'RUB',
+        },
+        'confirmation': {
+            'type': 'redirect',
+            'return_url': return_url,
+        },
+        'capture': True,
+        'description': f'Оплата бронирования #{booking.pk} — {booking.animal.name}',
+        'metadata': {
+            'payment_db_id': str(payment.pk),
+            'booking_id': str(booking.pk),
+        },
+    }, idempotency_key=str(uuid.uuid4()))
+
+    payment.yookassa_payment_id = yoo_payment.id
+    payment.payment_method = 'online'
+    payment.status = 'pending'
+    payment.save(update_fields=['yookassa_payment_id', 'payment_method', 'status'])
+
+    log_action(request, 'Инициирована онлайн-оплата ЮKassa', 'Payment', payment.pk)
+    return redirect(yoo_payment.confirmation.confirmation_url)
+
+
+@csrf_exempt
+@require_POST
+def yookassa_webhook(request):
+    """Получает уведомления от ЮKassa об изменении статуса платежа."""
+    from yookassa import Configuration
+    from yookassa.domain.notification import WebhookNotificationEventType, WebhookNotificationFactory
+
+    Configuration.account_id = settings.YOOKASSA_SHOP_ID
+    Configuration.secret_key = settings.YOOKASSA_SECRET_KEY
+
+    try:
+        body = json.loads(request.body)
+        notification = WebhookNotificationFactory().create(body)
+        yoo_obj = notification.object
+
+        payment = Payment.objects.filter(yookassa_payment_id=yoo_obj.id).first()
+        if payment:
+            if notification.event == WebhookNotificationEventType.PAYMENT_SUCCEEDED:
+                payment.status = 'paid'
+                payment.payment_date = tz.now()
+                payment.transaction_id = yoo_obj.id
+                payment.save(update_fields=['status', 'payment_date', 'transaction_id'])
+            elif notification.event == WebhookNotificationEventType.PAYMENT_CANCELED:
+                payment.status = 'failed'
+                payment.save(update_fields=['status'])
+    except Exception:
+        pass
+
+    return JsonResponse({'status': 'ok'})
+
+
+@client_required
+def payment_return(request):
+    """Страница возврата после оплаты через ЮKassa."""
+    from yookassa import Configuration, Payment as YooPayment
+
+    payment_db_id = request.GET.get('payment_id')
+    payment = None
+    if payment_db_id:
+        client = get_client(request)
+        payment = Payment.objects.filter(pk=payment_db_id, client=client).first()
+
+        if payment and payment.yookassa_payment_id and payment.status != 'paid':
+            Configuration.account_id = settings.YOOKASSA_SHOP_ID
+            Configuration.secret_key = settings.YOOKASSA_SECRET_KEY
+            try:
+                yoo_payment = YooPayment.find_one(payment.yookassa_payment_id)
+                if yoo_payment.status == 'succeeded':
+                    payment.status = 'paid'
+                    payment.payment_date = tz.now()
+                    payment.transaction_id = yoo_payment.id
+                    payment.save(update_fields=['status', 'payment_date', 'transaction_id'])
+                elif yoo_payment.status == 'canceled':
+                    payment.status = 'failed'
+                    payment.save(update_fields=['status'])
+            except Exception:
+                pass
+
+    return render(request, 'cabinet/payment_return.html', {'payment': payment})
+
+
+@client_required
+def cabinet_pay(request, booking_pk):
+    client = get_client(request)
+    booking = get_object_or_404(Booking, pk=booking_pk, client=client)
+    payment = booking.payments.filter(status__in=['unpaid', 'pending']).first()
+    if not payment:
+        messages.info(request, 'Нет активного платежа для этого бронирования.')
+        return redirect('cabinet_bookings')
+    if request.method == 'POST':
+        method = request.POST.get('payment_method', '')
+        if method not in dict(PAYMENT_METHODS):
+            messages.error(request, 'Выберите способ оплаты.')
+        else:
+            payment.payment_method = method
+            payment.status = 'pending'
+            payment.save(update_fields=['payment_method', 'status'])
+            log_action(request, 'Клиент выбрал способ оплаты', 'Payment', payment.pk)
+            messages.success(request, 'Способ оплаты выбран. Администратор подтвердит оплату.')
+            return redirect('cabinet_bookings')
+    return render(request, 'cabinet/pay.html', {
+        'booking': booking,
+        'payment': payment,
+        'payment_methods': PAYMENT_METHODS,
+    })

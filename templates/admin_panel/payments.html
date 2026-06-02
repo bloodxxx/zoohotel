@@ -1,0 +1,51 @@
+{% extends 'base_admin.html' %}
+{% block title %}Платежи — ZooHotel{% endblock %}
+{% block topbar_title %}Журнал платежей{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h1 class="page-title" style="margin:0;"><i class="fa-solid fa-credit-card"></i> Журнал платежей</h1>
+  <a href="{% url 'payment_create' %}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Добавить</a>
+</div>
+<div class="stat-card mb-3" style="max-width:320px;">
+  <div class="stat-icon green"><i class="fa-solid fa-ruble-sign"></i></div>
+  <div>
+    <div class="stat-value">{{ total|floatformat:0 }} ₽</div>
+    <div class="stat-label">Итого оплачено за период</div>
+  </div>
+</div>
+<div class="table-card">
+  <div class="table-toolbar">
+    <form method="get" style="display:flex;gap:.5rem;flex-wrap:wrap;">
+      <select name="status" class="form-select" style="width:160px;">
+        <option value="">Все статусы</option>
+        {% for val,label in status_choices %}
+        <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <input type="date" name="date_from" value="{{ date_from }}" class="form-control" style="width:145px;">
+      <input type="date" name="date_to" value="{{ date_to }}" class="form-control" style="width:145px;">
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-magnifying-glass"></i></button>
+      <a href="{% url 'payments_admin' %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-xmark"></i></a>
+    </form>
+  </div>
+  <table>
+    <thead><tr><th>#</th><th>Бронь</th><th>Клиент</th><th>Сумма</th><th>Способ</th><th>Статус</th><th>Дата оплаты</th><th></th></tr></thead>
+    <tbody>
+      {% for p in payments %}
+      <tr>
+        <td>{{ p.pk }}</td>
+        <td><a href="{% url 'booking_detail' p.booking.pk %}">#{{ p.booking.pk }}</a></td>
+        <td>{{ p.client.full_name }}</td>
+        <td><strong>{{ p.amount|floatformat:0 }} ₽</strong></td>
+        <td>{{ p.payment_method }}</td>
+        <td><span class="status-badge badge-{{ p.status }}">{{ p.get_status_display }}</span></td>
+        <td>{{ p.payment_date|date:"d.m.Y"|default:"—" }}</td>
+        <td><a href="{% url 'payment_edit' p.pk %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-pen"></i></a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--muted);">Платежей не найдено</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

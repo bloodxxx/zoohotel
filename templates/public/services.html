@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Услуги — ZooHotel{% endblock %}
+{% block content %}
+<div class="container" style="padding:2.5rem 1.5rem;">
+  <h1 class="page-title"><i class="fa-solid fa-list"></i> Услуги</h1>
+  <p style="color:var(--muted);margin-bottom:2rem;">Полный комплекс услуг по уходу за вашим питомцем</p>
+
+  {% for cat in categories %}
+  <h2 style="font-size:1.1rem;font-weight:700;color:var(--dark);margin:2rem 0 1rem;display:flex;align-items:center;gap:.5rem;">
+    <i class="fa-solid fa-tag" style="color:var(--primary);"></i> {{ cat }}
+  </h2>
+  <div class="grid grid-3">
+    {% for svc in services %}{% if svc.category == cat %}
+    <div class="card card-body">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.75rem;">
+        <span class="room-badge badge-{{ svc.status }}">{{ svc.get_status_display }}</span>
+      </div>
+      <div style="font-weight:700;font-size:1rem;margin-bottom:.35rem;">{{ svc.name }}</div>
+      {% if svc.description %}<div style="font-size:.85rem;color:var(--muted);margin-bottom:.75rem;line-height:1.6;">{{ svc.description }}</div>{% endif %}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:.75rem;border-top:1px solid var(--border);">
+        <span class="price-tag">{{ svc.price|floatformat:0 }} ₽</span>
+        <span style="font-size:.8rem;color:var(--muted);">за {{ svc.unit }}</span>
+      </div>
+    </div>
+    {% endif %}{% endfor %}
+  </div>
+  {% empty %}
+  <div class="empty-state"><i class="fa-solid fa-list"></i><p>Услуги пока не добавлены</p></div>
+  {% endfor %}
+
+  <div style="text-align:center;margin-top:3rem;padding:2rem;background:var(--primary-light);border-radius:var(--radius);">
+    <h3 style="color:var(--primary-dark);margin-bottom:.5rem;">Хотите воспользоваться услугами?</h3>
+    <p style="color:var(--muted);margin-bottom:1rem;">Выберите нужные услуги при бронировании номера</p>
+    <a href="{% url 'booking' %}" class="btn btn-primary"><i class="fa-solid fa-calendar-plus"></i> Перейти к бронированию</a>
+  </div>
+</div>
+{% endblock %}

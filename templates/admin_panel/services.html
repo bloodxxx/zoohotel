@@ -1,0 +1,28 @@
+{% extends 'base_admin.html' %}
+{% block title %}Услуги — ZooHotel{% endblock %}
+{% block topbar_title %}Услуги{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h1 class="page-title" style="margin:0;"><i class="fa-solid fa-list"></i> Услуги</h1>
+  <a href="{% url 'service_create' %}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Добавить</a>
+</div>
+<div class="table-card">
+  <table>
+    <thead><tr><th>Название</th><th>Категория</th><th>Цена</th><th>Ед. изм.</th><th>Статус</th><th></th></tr></thead>
+    <tbody>
+      {% for s in services %}
+      <tr>
+        <td><strong>{{ s.name }}</strong>{% if s.description %}<div style="font-size:.78rem;color:var(--muted);">{{ s.description|truncatechars:50 }}</div>{% endif %}</td>
+        <td>{{ s.category }}</td>
+        <td>{{ s.price|floatformat:0 }} ₽</td>
+        <td>{{ s.unit }}</td>
+        <td><span class="status-badge badge-{{ s.status }}">{{ s.get_status_display }}</span></td>
+        <td><a href="{% url 'service_edit' s.pk %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-pen"></i></a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted);">Услуг нет</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

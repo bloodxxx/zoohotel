@@ -1,0 +1,386 @@
+{% extends 'base_cabinet.html' %}
+{% block title %}Новое бронирование — ZooHotel{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+.flatpickr-calendar { font-family: 'Inter', sans-serif; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,.15); border: none; }
+.flatpickr-day.selected, .flatpickr-day.selected:hover { background: var(--primary); border-color: var(--primary); }
+.flatpickr-day:hover { background: var(--primary-light); color: var(--primary); }
+.flatpickr-months .flatpickr-month { background: var(--primary); color: #fff; border-radius: 12px 12px 0 0; }
+.flatpickr-current-month .flatpickr-monthDropdown-months,
+.flatpickr-current-month input.cur-year { color: #fff; }
+.flatpickr-day.inRange { background: var(--primary-light); border-color: var(--primary-light); color: var(--primary); }
+
+.date-input-wrap { position: relative; }
+.date-input-wrap i.icon { position: absolute; left: .8rem; top: 50%; transform: translateY(-50%); color: var(--primary); pointer-events: none; font-size: .9rem; z-index: 1; }
+.date-input-wrap .form-control { padding-left: 2.3rem; }
+
+.room-select-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: .65rem; }
+.room-radio { display: none; }
+.room-select-card {
+  border: 2px solid var(--border); border-radius: var(--radius);
+  padding: 1rem; cursor: pointer; transition: all .18s;
+  background: var(--white); position: relative;
+}
+.room-select-card:hover { border-color: var(--primary); background: #f8fffe; }
+.room-radio:checked + .room-select-card { border-color: var(--primary); background: var(--primary-light); box-shadow: 0 0 0 3px rgba(26,107,71,.12); }
+.room-radio:checked + .room-select-card .room-card-check { opacity: 1; transform: scale(1); }
+.room-card-check {
+  position: absolute; top: .6rem; right: .6rem;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--primary); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .6rem; opacity: 0; transform: scale(.6); transition: all .18s;
+}
+.room-card-icon { font-size: 1.6rem; color: var(--primary); margin-bottom: .5rem; }
+.room-card-name { font-weight: 700; font-size: .88rem; color: var(--dark); }
+.room-card-type { font-size: .72rem; color: var(--muted); margin: .1rem 0 .35rem; font-weight: 500; }
+.room-card-price { font-size: .95rem; font-weight: 800; color: var(--primary); }
+
+.svc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: .5rem; }
+.svc-check-input { display: none; }
+.svc-card {
+  border: 2px solid var(--border); border-radius: 8px;
+  padding: .65rem .8rem; cursor: pointer; transition: all .18s;
+  background: var(--white); display: flex; align-items: flex-start; gap: .5rem;
+}
+.svc-card:hover { border-color: var(--primary); }
+.svc-check-input:checked + .svc-card { border-color: var(--primary); background: var(--primary-light); }
+.svc-check-input:checked + .svc-card .svc-dot { background: var(--primary); border-color: var(--primary); }
+.svc-check-input:checked + .svc-card .svc-dot::after { opacity: 1; }
+.svc-dot {
+  width: 16px; height: 16px; border-radius: 4px; border: 2px solid #d1d5db;
+  flex-shrink: 0; margin-top: .15rem; transition: all .18s;
+  position: relative; display: flex; align-items: center; justify-content: center;
+}
+.svc-dot::after {
+  content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
+  font-size: .55rem; color: #fff; opacity: 0; transition: opacity .15s;
+}
+.room-type-btn {
+  display: inline-block; padding: .35rem .9rem; border-radius: 20px;
+  border: 2px solid var(--border); font-size: .82rem; font-weight: 600;
+  color: var(--muted); background: var(--white); transition: all .15s; cursor: pointer;
+}
+.room-type-radio:checked + .room-type-btn,
+.room-type-btn.active {
+  border-color: var(--primary); background: var(--primary-light); color: var(--primary);
+}
+.room-label.hidden { display: none; }
+</style>
+{% endblock %}
+
+{% block cabinet_content %}
+<h2 class="page-title">
+  <i class="fa-solid fa-calendar-plus"></i>
+  {% if rebook %}Повторное бронирование{% else %}Новое бронирование{% endif %}
+</h2>
+
+<div style="display:grid;grid-template-columns:1fr 280px;gap:1.5rem;align-items:start;">
+  <form method="post" novalidate id="booking-form">
+    {% csrf_token %}
+
+    <!-- Животное -->
+    <div class="card mb-2">
+      <div class="card-header"><i class="fa-solid fa-paw" style="color:var(--primary);"></i> Животное</div>
+      <div class="card-body">
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">{{ form.animal.label }} <span class="req">*</span></label>
+          {{ form.animal }}
+          {% if form.animal.errors %}<div class="invalid-feedback" style="display:block;">{{ form.animal.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Даты -->
+    <div class="card mb-2">
+      <div class="card-header"><i class="fa-regular fa-calendar" style="color:var(--primary);"></i> Даты проживания</div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Дата и время заезда <span class="req">*</span></label>
+            <div class="date-input-wrap">
+              <i class="fa-regular fa-calendar-plus icon"></i>
+              <input type="text" id="id_check_in_date" name="check_in_date"
+                class="form-control" placeholder="Выберите дату и время"
+                value="{{ form.check_in_date.value|default:'' }}" readonly>
+            </div>
+            {% if form.check_in_date.errors %}<div class="invalid-feedback" style="display:block;">{{ form.check_in_date.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Дата и время выезда <span class="req">*</span></label>
+            <div class="date-input-wrap">
+              <i class="fa-regular fa-calendar-minus icon"></i>
+              <input type="text" id="id_check_out_date" name="check_out_date"
+                class="form-control" placeholder="Выберите дату и время"
+                value="{{ form.check_out_date.value|default:'' }}" readonly>
+            </div>
+            {% if form.check_out_date.errors %}<div class="invalid-feedback" style="display:block;">{{ form.check_out_date.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+        <div id="nights-display" style="margin-top:.65rem;font-size:.83rem;color:var(--muted);"></div>
+      </div>
+    </div>
+
+    <!-- Номер -->
+    <div class="card mb-2">
+      <div class="card-header"><i class="fa-solid fa-house" style="color:var(--primary);"></i> Выберите номер</div>
+      <div class="card-body">
+        <!-- Шаг 1: тип -->
+        <div style="margin-bottom:1rem;">
+          <div style="font-size:.8rem;font-weight:600;color:var(--muted);margin-bottom:.5rem;">Тип номера</div>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+            <label style="cursor:pointer;">
+              <input type="radio" name="room_type_sel" value="" class="room-type-radio" style="display:none;" checked>
+              <span class="room-type-btn active">Все</span>
+            </label>
+            <label style="cursor:pointer;">
+              <input type="radio" name="room_type_sel" value="economy" class="room-type-radio" style="display:none;">
+              <span class="room-type-btn">Эконом</span>
+            </label>
+            <label style="cursor:pointer;">
+              <input type="radio" name="room_type_sel" value="standard" class="room-type-radio" style="display:none;">
+              <span class="room-type-btn">Стандарт</span>
+            </label>
+            <label style="cursor:pointer;">
+              <input type="radio" name="room_type_sel" value="lux" class="room-type-radio" style="display:none;">
+              <span class="room-type-btn">Люкс</span>
+            </label>
+          </div>
+        </div>
+        {% if form.room.errors %}<div class="invalid-feedback" style="display:block;margin-bottom:.5rem;">{{ form.room.errors.0 }}</div>{% endif %}
+        <div id="rooms-loading" style="display:none;color:var(--muted);font-size:.85rem;"><i class="fa-solid fa-spinner fa-spin"></i> Загрузка...</div>
+        <div id="no-rooms-msg" style="display:none;color:var(--muted);font-size:.85rem;">Нет доступных номеров для выбранных дат и типа</div>
+        <div class="room-select-grid" id="room-select-grid">
+          {% for room in rooms %}
+          <label class="room-label" data-type="{{ room.type }}">
+            <input type="radio" name="room" value="{{ room.pk }}" class="room-radio"
+              data-price="{{ room.price_per_day }}"
+              {% if form.room.value == room.pk|stringformat:'s' %}checked{% endif %}>
+            <div class="room-select-card">
+              <div class="room-card-check"><i class="fa-solid fa-check"></i></div>
+              <div class="room-card-icon">
+                {% if room.type == 'economy' %}<i class="fa-solid fa-house-chimney"></i>
+                {% elif room.type == 'standard' %}<i class="fa-solid fa-house-chimney-window"></i>
+                {% else %}<i class="fa-solid fa-star"></i>{% endif %}
+              </div>
+              <div class="room-card-name">{{ room.name }}</div>
+              <div class="room-card-type">{{ room.get_type_display }}</div>
+              {% if room.description %}<div style="font-size:.7rem;color:var(--muted);margin:.2rem 0 .3rem;line-height:1.4;">{{ room.description|truncatechars:60 }}</div>{% endif %}
+              <div class="room-card-price">{{ room.price_per_day|floatformat:0 }} ₽<span style="font-weight:400;font-size:.72rem;color:var(--muted);"> / сут.</span></div>
+            </div>
+          </label>
+          {% empty %}
+          <p style="color:var(--muted);font-size:.88rem;grid-column:1/-1;">Нет доступных номеров</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Услуги -->
+    <div class="card mb-2">
+      <div class="card-header">
+        <span><i class="fa-solid fa-list-check" style="color:var(--primary);"></i> Дополнительные услуги</span>
+        <span style="font-size:.75rem;color:var(--muted);font-weight:400;">необязательно</span>
+      </div>
+      <div class="card-body">
+        {% regroup services by category as svc_by_cat %}
+        {% for cat in svc_by_cat %}
+        <div style="margin-bottom:.9rem;">
+          <div style="font-size:.73rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.4rem;">{{ cat.grouper }}</div>
+          <div class="svc-grid">
+            {% for svc in cat.list %}
+            <label>
+              <input type="checkbox" name="services" value="{{ svc.pk }}"
+                class="svc-check-input svc-check" id="csvc_{{ svc.pk }}" data-price="{{ svc.price }}"
+                {% if svc.pk in rebook_service_ids %}checked{% endif %}>
+              <div class="svc-card">
+                <div class="svc-dot"></div>
+                <div>
+                  <div class="svc-card-name">{{ svc.name }}</div>
+                  <div class="svc-card-price">{{ svc.price|floatformat:0 }} ₽ / {{ svc.unit }}</div>
+                </div>
+              </div>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Примечания -->
+    <div class="card mb-2">
+      <div class="card-header"><i class="fa-regular fa-comment" style="color:var(--primary);"></i> Примечания</div>
+      <div class="card-body">
+        <div class="form-group" style="margin-bottom:0;">
+          {{ form.notes }}
+          {% if form.notes.errors %}<div class="invalid-feedback" style="display:block;">{{ form.notes.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:.75rem;">
+      <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Создать заявку</button>
+      <a href="{% url 'cabinet_bookings' %}" class="btn btn-secondary">Отмена</a>
+    </div>
+  </form>
+
+  <!-- Калькулятор -->
+  <div style="position:sticky;top:84px;">
+    <div class="card">
+      <div class="card-header"><i class="fa-solid fa-calculator" style="color:var(--primary);"></i> Стоимость</div>
+      <div class="card-body">
+        <div id="calc-price" style="font-size:1.3rem;font-weight:800;color:var(--primary);margin-bottom:.25rem;">Выберите номер и даты</div>
+        <div id="calc-detail" style="font-size:.8rem;color:var(--muted);line-height:1.9;"></div>
+        <div class="divider"></div>
+        <div style="font-size:.8rem;color:var(--muted);line-height:2;">
+          <div><i class="fa-solid fa-circle-check" style="color:var(--success);"></i> Подтверждение в течение 1 часа</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
+<script>
+flatpickr.localize(flatpickr.l10ns.ru);
+
+const ciPicker = flatpickr('#id_check_in_date', {
+  enableTime: true, dateFormat: 'Y-m-d H:i',
+  altInput: true, altFormat: 'j F Y, H:i',
+  minDate: 'today', time_24hr: true,
+  defaultDate: '{{ rebook_ci|default:"" }}',
+  onChange: function(dates) {
+    if (dates[0]) coPicker.set('minDate', dates[0]);
+    calcPrice();
+  }
+});
+
+const coPicker = flatpickr('#id_check_out_date', {
+  enableTime: true, dateFormat: 'Y-m-d H:i',
+  altInput: true, altFormat: 'j F Y, H:i',
+  minDate: 'today', time_24hr: true,
+  defaultDate: '{{ rebook_co|default:"" }}',
+  onChange: calcPrice
+});
+
+function calcPrice() {
+  const roomInput = document.querySelector('input[name="room"]:checked');
+  const ci = ciPicker.selectedDates[0];
+  const co = coPicker.selectedDates[0];
+  const priceEl = document.getElementById('calc-price');
+  const detailEl = document.getElementById('calc-detail');
+  const nightsEl = document.getElementById('nights-display');
+
+  if (!ci || !co || co <= ci) {
+    if (nightsEl) nightsEl.textContent = '';
+    priceEl.textContent = roomInput ? 'Выберите даты' : 'Выберите номер и даты';
+    detailEl.textContent = '';
+    return;
+  }
+  const nights = Math.max(Math.ceil((co - ci) / 86400000), 1);
+  const word = nights % 10 === 1 && nights % 100 !== 11 ? 'ночь' :
+               [2,3,4].includes(nights % 10) && ![12,13,14].includes(nights % 100) ? 'ночи' : 'ночей';
+  if (nightsEl) nightsEl.innerHTML = '<i class="fa-solid fa-moon" style="color:var(--primary);"></i> ' + nights + ' ' + word;
+
+  if (!roomInput) { priceEl.textContent = 'Выберите номер'; detailEl.textContent = ''; return; }
+
+  const ppd = parseFloat(roomInput.dataset.price || 0);
+  const roomCost = ppd * nights;
+  let svcTotal = 0, svcLines = [];
+  document.querySelectorAll('.svc-check:checked').forEach(cb => {
+    const p = parseFloat(cb.dataset.price || 0);
+    svcTotal += p;
+    const nm = cb.closest('label').querySelector('.svc-card-name');
+    if (nm) svcLines.push(nm.textContent + ': ' + p.toLocaleString('ru-RU') + ' ₽');
+  });
+
+  priceEl.textContent = (roomCost + svcTotal).toLocaleString('ru-RU') + ' ₽';
+  let detail = 'Номер: ' + roomCost.toLocaleString('ru-RU') + ' ₽ (' + nights + ' ' + word + ')';
+  if (svcLines.length) detail += '<br>' + svcLines.join('<br>');
+  detailEl.innerHTML = detail;
+}
+
+document.querySelectorAll('input[name="room"]').forEach(r => r.addEventListener('change', calcPrice));
+document.querySelectorAll('.svc-check').forEach(cb => cb.addEventListener('change', calcPrice));
+calcPrice();
+
+// Фильтрация по типу номера
+function filterRoomsByType() {
+  const selType = document.querySelector('input[name="room_type_sel"]:checked')?.value || '';
+  document.querySelectorAll('.room-label').forEach(lbl => {
+    const t = lbl.dataset.type;
+    lbl.classList.toggle('hidden', selType !== '' && t !== selType);
+  });
+  // Снять выбор если скрытый
+  const checked = document.querySelector('input[name="room"]:checked');
+  if (checked) {
+    const lbl = checked.closest('.room-label');
+    if (lbl && lbl.classList.contains('hidden')) {
+      checked.checked = false;
+      calcPrice();
+    }
+  }
+  checkNoRooms();
+}
+
+function checkNoRooms() {
+  const visible = document.querySelectorAll('.room-label:not(.hidden)');
+  document.getElementById('no-rooms-msg').style.display = visible.length === 0 ? 'block' : 'none';
+}
+
+document.querySelectorAll('.room-type-radio').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll('.room-type-btn').forEach(b => b.classList.remove('active'));
+    r.nextElementSibling.classList.add('active');
+    filterRoomsByType();
+  });
+});
+
+// Проверка занятости при изменении дат
+function checkRoomAvailability() {
+  const ci = ciPicker.selectedDates[0];
+  const co = coPicker.selectedDates[0];
+  if (!ci || !co || co <= ci) return;
+
+  const fmt = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + 'T' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  const selType = document.querySelector('input[name="room_type_sel"]:checked')?.value || '';
+  const url = `/api/available-rooms/?check_in=${fmt(ci)}&check_out=${fmt(co)}&type=${selType}`;
+
+  fetch(url).then(r => r.json()).then(data => {
+    const availIds = new Set(data.rooms.map(r => String(r.id)));
+    document.querySelectorAll('.room-label').forEach(lbl => {
+      const inp = lbl.querySelector('input[name="room"]');
+      const unavail = !availIds.has(String(inp.value));
+      lbl.style.opacity = unavail ? '0.4' : '1';
+      lbl.style.pointerEvents = unavail ? 'none' : '';
+      if (unavail && inp.checked) { inp.checked = false; calcPrice(); }
+    });
+    checkNoRooms();
+  }).catch(() => {});
+}
+
+ciPicker.config.onChange.push(checkRoomAvailability);
+coPicker.config.onChange.push(checkRoomAvailability);
+
+{% if rebook_room_id %}
+document.addEventListener('DOMContentLoaded', function() {
+  const roomInput = document.querySelector('input[name="room"][value="{{ rebook_room_id }}"]');
+  if (roomInput) {
+    roomInput.checked = true;
+    const roomType = roomInput.closest('.room-label')?.dataset.type;
+    if (roomType) {
+      const typeRadio = document.querySelector(`input[name="room_type_sel"][value="${roomType}"]`);
+      if (typeRadio) { typeRadio.checked = true; filterRoomsByType(); }
+    }
+    calcPrice();
+  }
+});
+{% endif %}
+</script>
+{% endblock %}

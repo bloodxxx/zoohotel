@@ -1,0 +1,47 @@
+{% extends 'base_cabinet.html' %}
+{% block title %}Оплата брони #{{ booking.pk }} — ZooHotel{% endblock %}
+{% block cabinet_content %}
+<h2 class="page-title"><i class="fa-solid fa-credit-card"></i> Оплата бронирования #{{ booking.pk }}</h2>
+<div class="card" style="max-width:480px;">
+  <div class="card-body">
+    <div class="info-row"><span class="label">Животное</span> {{ booking.animal.name }}</div>
+    <div class="info-row"><span class="label">Номер</span> {{ booking.room.name }}</div>
+    <div class="info-row"><span class="label">Заезд</span> {{ booking.check_in_date|date:"d.m.Y H:i" }}</div>
+    <div class="info-row"><span class="label">Выезд</span> {{ booking.check_out_date|date:"d.m.Y H:i" }}</div>
+    <div class="info-row"><span class="label">К оплате</span> <strong style="color:var(--primary);font-size:1.1rem;">{{ payment.amount|floatformat:0 }} ₽</strong></div>
+
+    <hr style="margin:1rem 0;">
+
+    <div style="margin-bottom:1.25rem;">
+      <a href="{% url 'cabinet_pay_yookassa' booking.pk %}" class="btn btn-primary" style="width:100%;justify-content:center;font-size:1rem;padding:.75rem;">
+        <i class="fa-solid fa-credit-card"></i> Оплатить онлайн через ЮKassa
+      </a>
+      <p style="margin:.6rem 0 0;font-size:.82rem;color:var(--text-muted);text-align:center;">
+        Банковская карта, ЮMoney и другие способы
+      </p>
+    </div>
+
+    <details style="margin-bottom:.5rem;">
+      <summary style="cursor:pointer;font-size:.9rem;color:var(--text-muted);">Оплатить при заезде</summary>
+      <form method="post" novalidate style="margin-top:.75rem;">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label">Способ оплаты при заезде</label>
+          {% for value, label in payment_methods %}
+          <div style="margin-bottom:.5rem;">
+            <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;">
+              <input type="radio" name="payment_method" value="{{ value }}" {% if forloop.first %}checked{% endif %}>
+              {{ label }}
+            </label>
+          </div>
+          {% endfor %}
+        </div>
+        <div style="display:flex;gap:.75rem;margin-top:1rem;">
+          <button type="submit" class="btn btn-secondary"><i class="fa-solid fa-check"></i> Выбрать</button>
+          <a href="{% url 'cabinet_bookings' %}" class="btn btn-outline">Отмена</a>
+        </div>
+      </form>
+    </details>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends 'base_cabinet.html' %}
+{% block title %}Профиль — ZooHotel{% endblock %}
+{% block cabinet_content %}
+<h2 class="page-title"><i class="fa-regular fa-user"></i> Профиль</h2>
+<div class="card">
+  <div class="card-header">Личные данные</div>
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        {% for field in pform %}
+        <div class="form-group">
+          <label class="form-label">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<div class="invalid-feedback" style="display:block;">{{ field.errors.0 }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      <div style="display:flex;gap:.75rem;margin-top:.5rem;">
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Сохранить</button>
+        <a href="{% url 'cabinet_password' %}" class="btn btn-secondary"><i class="fa-solid fa-key"></i> Сменить пароль</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% if client %}
+<div class="card mt-2">
+  <div class="card-header">Контактные данные</div>
+  <div class="card-body" style="font-size:.9rem;">
+    <div class="info-row"><span class="label"><i class="fa-solid fa-phone"></i> Телефон</span> {{ client.phone }}</div>
+    <div class="info-row"><span class="label"><i class="fa-solid fa-envelope"></i> Email</span> {{ client.email }}</div>
+    <div class="info-row"><span class="label"><i class="fa-solid fa-dog"></i> Животных</span> {{ client.animals.count }}</div>
+    <div class="info-row"><span class="label"><i class="fa-solid fa-calendar"></i> Бронирований</span> {{ client.bookings.count }}</div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

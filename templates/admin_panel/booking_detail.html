@@ -1,0 +1,155 @@
+{% extends 'base_admin.html' %}
+{% block title %}Бронь #{{ booking.pk }} — ZooHotel{% endblock %}
+{% block topbar_title %}Бронирование #{{ booking.pk }}{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem;">
+  <h1 class="page-title" style="margin:0;"><i class="fa-solid fa-calendar-check"></i> Бронь #{{ booking.pk }}</h1>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+    <a href="{% url 'booking_edit' booking.pk %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-pen"></i> Редактировать</a>
+    {% if request.user.role == 'admin' %}
+    <form method="post" action="{% url 'booking_delete' booking.pk %}" onsubmit="return confirm('Удалить бронирование #{{ booking.pk }}? Это действие необратимо.');">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i> Удалить</button>
+    </form>
+    {% endif %}
+    <a href="{% url 'bookings_admin' %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-arrow-left"></i> Назад</a>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;">
+  <div>
+    <div class="card mb-2">
+      <div class="card-header"><i class="fa-solid fa-info-circle" style="color:var(--primary);"></i> Детали бронирования</div>
+      <div class="card-body">
+        <div class="info-row"><span class="label">Статус</span> <span class="status-badge badge-{{ booking.status }}">{{ booking.get_status_display }}</span></div>
+        <div class="info-row"><span class="label">Клиент</span> <a href="{% url 'client_detail' booking.client.pk %}">{{ booking.client.full_name }}</a></div>
+        <div class="info-row"><span class="label">Животное</span> <a href="{% url 'animal_detail' booking.animal.pk %}">{{ booking.animal.name }} ({{ booking.animal.get_species_display }})</a></div>
+        <div class="info-row"><span class="label">Номер</span> {{ booking.room.name }} — {{ booking.room.get_type_display }}</div>
+        <div class="info-row"><span class="label">Заезд</span> {{ booking.check_in_date|date:"d.m.Y H:i" }}</div>
+        <div class="info-row"><span class="label">Выезд</span> {{ booking.check_out_date|date:"d.m.Y H:i" }}</div>
+        <div class="info-row"><span class="label">Ночей</span> {{ booking.nights }}</div>
+        <div class="info-row"><span class="label">Итого</span> <strong style="color:var(--primary);font-size:1.1rem;">{{ booking.total_price|floatformat:0 }} ₽</strong></div>
+        {% if booking.notes %}<div class="info-row"><span class="label">Примечания</span> {{ booking.notes }}</div>{% endif %}
+      </div>
+    </div>
+
+    {% if booking.booking_services.all %}
+    <div class="card mb-2">
+      <div class="card-header"><i class="fa-solid fa-list" style="color:var(--primary);"></i> Услуги</div>
+      <table>
+        <thead><tr><th>Услуга</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr></thead>
+        <tbody>
+          {% for bs in booking.booking_services.all %}
+          <tr>
+            <td>{{ bs.service.name }}</td>
+            <td>{{ bs.quantity }}</td>
+            <td>{{ bs.price|floatformat:0 }} ₽</td>
+            <td>{{ bs.price|floatformat:0 }} ₽</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    <div class="card mb-2">
+      <div class="card-header">
+        <span><i class="fa-solid fa-list-check" style="color:var(--primary);"></i> Задачи ухода</span>
+        <a href="{% url 'task_create' %}" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i> Добавить</a>
+      </div>
+      {% if tasks %}
+      <table>
+        <thead><tr><th>Процедура</th><th>Время</th><th>Сотрудник</th><th>Статус</th></tr></thead>
+        <tbody>
+          {% for t in tasks %}
+          <tr>
+            <td>{{ t.service.name|default:"Общий уход" }}</td>
+            <td>{{ t.scheduled_time|date:"d.m H:i" }}</td>
+            <td>{{ t.assigned_to.get_full_name|default:t.assigned_to.username }}</td>
+            <td><span class="status-badge badge-{{ t.status }}">{{ t.get_status_display }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state" style="padding:1.5rem;"><i class="fa-solid fa-list-check"></i><p>Задач нет</p></div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span><i class="fa-solid fa-credit-card" style="color:var(--primary);"></i> Платежи</span>
+      </div>
+      {% if payments %}
+      <table>
+        <thead><tr><th>Дата</th><th>Сумма</th><th>Способ</th><th>Статус</th><th></th></tr></thead>
+        <tbody>
+          {% for p in payments %}
+          <tr>
+            <td>{{ p.payment_date|date:"d.m.Y"|default:"—" }}</td>
+            <td>{{ p.amount|floatformat:0 }} ₽</td>
+            <td>{{ p.payment_method|default:"—" }}</td>
+            <td><span class="status-badge badge-{{ p.status }}">{{ p.get_status_display }}</span></td>
+            <td>
+              {% if p.status != 'paid' and p.status != 'refunded' %}
+              <form method="post" action="{% url 'payment_mark_paid' p.pk %}" style="display:flex;gap:.4rem;align-items:center;">
+                {% csrf_token %}
+                <select name="payment_method" class="form-select" style="width:auto;font-size:.8rem;padding:.25rem .5rem;">
+                  <option value="cash">Наличные</option>
+                  <option value="card">Карта</option>
+                </select>
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-check"></i> Оплачено</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state" style="padding:1.5rem;"><i class="fa-solid fa-credit-card"></i><p>Платежей нет</p></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div>
+    <div class="card mb-2">
+      <div class="card-header"><i class="fa-solid fa-arrows-rotate" style="color:var(--primary);"></i> Изменить статус</div>
+      <div class="card-body">
+        {% if booking.status == 'pending' %}
+        <form method="post" action="{% url 'booking_status' booking.pk %}" style="display:flex;gap:.5rem;flex-direction:column;">
+          {% csrf_token %}
+          <button type="submit" name="status" value="confirmed" class="btn btn-primary" style="justify-content:center;"><i class="fa-solid fa-check"></i> Подтвердить</button>
+          <button type="submit" name="status" value="cancelled" class="btn btn-danger" style="justify-content:center;"><i class="fa-solid fa-xmark"></i> Отменить</button>
+        </form>
+        {% elif booking.status == 'confirmed' %}
+        <form method="post" action="{% url 'booking_status' booking.pk %}" style="display:flex;gap:.5rem;flex-direction:column;">
+          {% csrf_token %}
+          {% if request.user.role == 'admin' %}
+          <button type="submit" name="status" value="completed" class="btn btn-primary" style="justify-content:center;"><i class="fa-solid fa-flag-checkered"></i> Завершить</button>
+          {% endif %}
+          <button type="submit" name="status" value="cancelled" class="btn btn-danger" style="justify-content:center;"><i class="fa-solid fa-xmark"></i> Отменить</button>
+        </form>
+        {% else %}
+        <div style="color:var(--muted);font-size:.88rem;text-align:center;padding:.5rem 0;">
+          Статус: <span class="status-badge badge-{{ booking.status }}">{{ booking.get_status_display }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><i class="fa-solid fa-dog" style="color:var(--primary);"></i> Животное</div>
+      <div class="card-body">
+        <div style="font-weight:700;margin-bottom:.5rem;">{{ booking.animal.name }}</div>
+        <div class="info-row"><span class="label">Вид</span> {{ booking.animal.get_species_display }}</div>
+        {% if booking.animal.breed %}<div class="info-row"><span class="label">Порода</span> {{ booking.animal.breed }}</div>{% endif %}
+        {% if booking.animal.special_needs %}
+        <div style="margin-top:.75rem;padding:.6rem;background:var(--accent-light);border-radius:6px;font-size:.83rem;color:#92400e;">
+          <i class="fa-solid fa-triangle-exclamation"></i> <strong>Особые отметки:</strong> {{ booking.animal.special_needs }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

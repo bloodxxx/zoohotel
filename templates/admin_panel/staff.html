@@ -1,0 +1,47 @@
+{% extends 'base_admin.html' %}
+{% block title %}Сотрудники — ZooHotel{% endblock %}
+{% block topbar_title %}Сотрудники{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h1 class="page-title" style="margin:0;"><i class="fa-solid fa-id-badge"></i> Сотрудники</h1>
+  <a href="{% url 'staff_create' %}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Добавить</a>
+</div>
+<div class="table-card">
+  <table>
+    <thead><tr><th>ФИО</th><th>Логин</th><th>Роль</th><th>Email</th><th>Телефон</th><th>Статус</th><th></th></tr></thead>
+    <tbody>
+      {% for u in staff %}
+      <tr>
+        <td><strong>{{ u.get_full_name|default:u.username }}</strong></td>
+        <td><span style="font-size:.82rem;color:var(--muted);">{{ u.username }}</span></td>
+        <td>{{ u.get_role_display }}</td>
+        <td>{{ u.email|default:"—" }}</td>
+        <td>{{ u.phone|default:"—" }}</td>
+        <td>
+          {% if u.is_blocked %}
+          <span class="status-badge badge-cancelled"><i class="fa-solid fa-ban"></i> Заблокирован</span>
+          {% else %}
+          <span class="status-badge badge-confirmed"><i class="fa-solid fa-circle-check"></i> Активен</span>
+          {% endif %}
+        </td>
+        <td style="white-space:nowrap;">
+          <a href="{% url 'staff_edit' u.pk %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-pen"></i></a>
+          {% if u.pk != request.user.pk %}
+          <form method="post" action="{% url 'staff_toggle' u.pk %}" style="display:inline;">
+            {% csrf_token %}
+            {% if u.is_blocked %}
+            <button type="submit" class="btn btn-success btn-sm" data-confirm="Разблокировать сотрудника?"><i class="fa-solid fa-lock-open"></i></button>
+            {% else %}
+            <button type="submit" class="btn btn-danger btn-sm" data-confirm="Заблокировать сотрудника {{ u.get_full_name }}?"><i class="fa-solid fa-ban"></i></button>
+            {% endif %}
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted);">Сотрудников нет</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

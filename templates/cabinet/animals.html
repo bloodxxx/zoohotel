@@ -1,0 +1,50 @@
+{% extends 'base_cabinet.html' %}
+{% block title %}Мои животные — ZooHotel{% endblock %}
+{% block cabinet_content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h2 class="page-title" style="margin:0;"><i class="fa-solid fa-dog"></i> Мои животные</h2>
+  <a href="{% url 'cabinet_animal_add' %}" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i> Добавить</a>
+</div>
+<div class="grid grid-2">
+  {% for animal in animals %}
+  <div class="card card-body">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;">
+          <div style="width:40px;height:40px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;color:var(--primary);font-size:1.1rem;">
+            {% if animal.species == 'dog' %}<i class="fa-solid fa-dog"></i>{% elif animal.species == 'cat' %}<i class="fa-solid fa-cat"></i>{% else %}<i class="fa-solid fa-paw"></i>{% endif %}
+          </div>
+          <div>
+            <div style="font-weight:700;font-size:1rem;">{{ animal.name }}</div>
+            <div style="font-size:.8rem;color:var(--muted);">{{ animal.get_species_display }}{% if animal.breed %}, {{ animal.breed }}{% endif %}</div>
+          </div>
+        </div>
+        {% if animal.birth_date %}
+        <div class="info-row"><span class="label"><i class="fa-regular fa-calendar"></i> Возраст</span> {{ animal.age }}</div>
+        {% endif %}
+        {% if animal.special_needs %}
+        <div style="margin-top:.5rem;font-size:.82rem;background:var(--accent-light);color:#92400e;padding:.4rem .7rem;border-radius:6px;">
+          <i class="fa-solid fa-triangle-exclamation"></i> {{ animal.special_needs|truncatechars:80 }}
+        </div>
+        {% endif %}
+      </div>
+      <div style="display:flex;gap:.4rem;flex-direction:column;align-items:flex-end;">
+        <a href="{% url 'cabinet_animal_edit' animal.pk %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-pen"></i></a>
+        {% if not animal.bookings.exists %}
+        <form method="post" action="{% url 'cabinet_animal_delete' animal.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger btn-sm" data-confirm="Удалить животное «{{ animal.name }}»?"><i class="fa-solid fa-trash"></i></button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="empty-state" style="grid-column:1/-1;">
+    <i class="fa-solid fa-dog"></i>
+    <p>У вас пока нет животных</p>
+    <a href="{% url 'cabinet_animal_add' %}" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i> Добавить животное</a>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

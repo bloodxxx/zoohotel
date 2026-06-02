@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Панель управления — ZooHotel{% endblock %}</title>
+{% load static %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+{% block extra_css %}{% endblock %}
+</head>
+<body>
+<div class="admin-layout">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <i class="fa-solid fa-paw"></i> ZooHotel
+    </div>
+
+    <p class="sidebar-section">Основное</p>
+    <ul class="sidebar-nav">
+      <li><a href="{% url 'admin_dashboard' %}" {% if request.resolver_match.url_name == 'admin_dashboard' %}class="active"{% endif %}><i class="fa-solid fa-gauge"></i> Дашборд</a></li>
+      <li><a href="{% url 'bookings_admin' %}" {% if 'booking' in request.resolver_match.url_name %}class="active"{% endif %}>
+        <i class="fa-solid fa-calendar-check"></i> Бронирования
+        {% with pending_count=pending_bookings_count %}{% if pending_count %}<span style="background:#ef4444;color:#fff;border-radius:10px;padding:.1rem .45rem;font-size:.7rem;font-weight:700;margin-left:auto;">{{ pending_count }}</span>{% endif %}{% endwith %}
+      </a></li>
+      <li><a href="{% url 'clients_admin' %}" {% if 'client' in request.resolver_match.url_name %}class="active"{% endif %}><i class="fa-solid fa-users"></i> Клиенты</a></li>
+      <li><a href="{% url 'animals_admin' %}" {% if 'animal' in request.resolver_match.url_name %}class="active"{% endif %}><i class="fa-solid fa-dog"></i> Животные</a></li>
+    </ul>
+
+    <p class="sidebar-section">Управление</p>
+    <ul class="sidebar-nav">
+      {% if user.role == 'admin' %}
+      <li><a href="{% url 'rooms_admin' %}" {% if 'room' in request.resolver_match.url_name %}class="active"{% endif %}><i class="fa-solid fa-house"></i> Номера</a></li>
+      {% endif %}
+      <li><a href="{% url 'services_admin' %}" {% if 'service' in request.resolver_match.url_name %}class="active"{% endif %}><i class="fa-solid fa-list"></i> Услуги</a></li>
+      <li><a href="{% url 'tasks_admin' %}" {% if 'task' in request.resolver_match.url_name %}class="active"{% endif %}><i class="fa-solid fa-list-check"></i> Задачи ухода</a></li>
+      <li><a href="{% url 'payments_admin' %}" {% if 'payment' in request.resolver_match.url_name %}class="active"{% endif %}><i class="fa-solid fa-credit-card"></i> Платежи</a></li>
+    </ul>
+
+    <p class="sidebar-section">Аналитика</p>
+    <ul class="sidebar-nav">
+      <li><a href="{% url 'reports_admin' %}" {% if 'report' in request.resolver_match.url_name %}class="active"{% endif %}><i class="fa-solid fa-chart-bar"></i> Отчёты</a></li>
+      {% if user.role == 'admin' %}
+      <li><a href="{% url 'staff_admin' %}" {% if 'staff' in request.resolver_match.url_name %}class="active"{% endif %}><i class="fa-solid fa-id-badge"></i> Сотрудники</a></li>
+      <li><a href="{% url 'logs_admin' %}" {% if 'logs' in request.resolver_match.url_name %}class="active"{% endif %}><i class="fa-solid fa-clock-rotate-left"></i> Журнал</a></li>
+      {% endif %}
+    </ul>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <strong>{{ user.get_full_name|default:user.username }}</strong>
+        {{ user.get_role_display }}
+      </div>
+      <a href="{% url 'logout' %}" style="color:rgba(255,255,255,.5);font-size:.82rem;margin-top:.5rem;display:block;">
+        <i class="fa-solid fa-right-from-bracket"></i> Выйти
+      </a>
+    </div>
+  </aside>
+
+  <div class="admin-content">
+    <div class="admin-topbar">
+      <button id="sidebar-toggler" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#374151;display:none;">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div style="font-weight:600;font-size:.95rem;">{% block topbar_title %}Панель управления{% endblock %}</div>
+      <div style="display:flex;align-items:center;gap:1rem;">
+        <a href="{% url 'home' %}" style="font-size:.85rem;color:#6b7280;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Сайт</a>
+        <span style="font-size:.85rem;color:#6b7280;"><i class="fa-regular fa-clock"></i> Ижевск, 2026</span>
+      </div>
+    </div>
+
+    <div class="admin-page">
+      {% if messages %}
+        {% for msg in messages %}
+          <div class="alert alert-{{ msg.tags }} alert-auto">
+            <i class="fa-solid {% if msg.tags == 'success' %}fa-circle-check{% elif msg.tags == 'error' or msg.tags == 'danger' %}fa-circle-xmark{% elif msg.tags == 'warning' %}fa-triangle-exclamation{% else %}fa-circle-info{% endif %}"></i>
+            {{ msg }}
+          </div>
+        {% endfor %}
+      {% endif %}
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% load static %}
+<script src="{% static 'js/main.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

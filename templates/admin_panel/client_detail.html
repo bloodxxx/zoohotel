@@ -1,0 +1,68 @@
+{% extends 'base_admin.html' %}
+{% block title %}{{ client.full_name }} — ZooHotel{% endblock %}
+{% block topbar_title %}Клиент: {{ client.full_name }}{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h1 class="page-title" style="margin:0;"><i class="fa-solid fa-user"></i> {{ client.full_name }}</h1>
+  <a href="{% url 'clients_admin' %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-arrow-left"></i> Назад</a>
+</div>
+<div style="display:grid;grid-template-columns:1fr 2fr;gap:1.5rem;">
+  <div>
+    <div class="card mb-2">
+      <div class="card-header"><i class="fa-solid fa-pen" style="color:var(--primary);"></i> Редактировать</div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% for field in form %}
+          <div class="form-group">
+            <label class="form-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<div class="invalid-feedback" style="display:block;">{{ field.errors.0 }}</div>{% endif %}
+          </div>
+          {% endfor %}
+          <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;"><i class="fa-solid fa-floppy-disk"></i> Сохранить</button>
+        </form>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><i class="fa-solid fa-dog" style="color:var(--primary);"></i> Животные</div>
+      {% if animals %}
+      <div class="card-body" style="padding:.75rem;">
+        {% for a in animals %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--border);">
+          <div>
+            <div style="font-weight:600;">{{ a.name }}</div>
+            <div style="font-size:.8rem;color:var(--muted);">{{ a.get_species_display }}{% if a.breed %}, {{ a.breed }}{% endif %}</div>
+          </div>
+          <a href="{% url 'animal_detail' a.pk %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-eye"></i></a>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding:1.5rem;"><i class="fa-solid fa-dog"></i><p>Нет животных</p></div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><i class="fa-solid fa-calendar-check" style="color:var(--primary);"></i> История бронирований</div>
+    <table>
+      <thead><tr><th>#</th><th>Животное</th><th>Номер</th><th>Заезд</th><th>Выезд</th><th>Статус</th><th>Сумма</th></tr></thead>
+      <tbody>
+        {% for b in bookings %}
+        <tr>
+          <td><a href="{% url 'booking_detail' b.pk %}">#{{ b.pk }}</a></td>
+          <td>{{ b.animal.name }}</td>
+          <td>{{ b.room.name }}</td>
+          <td>{{ b.check_in_date|date:"d.m.Y" }}</td>
+          <td>{{ b.check_out_date|date:"d.m.Y" }}</td>
+          <td><span class="status-badge badge-{{ b.status }}">{{ b.get_status_display }}</span></td>
+          <td>{{ b.total_price|floatformat:0 }} ₽</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center;padding:1.5rem;color:var(--muted);">Бронирований нет</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

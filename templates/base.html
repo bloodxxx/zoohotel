@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}ZooHotel — Зоогостиница Ижевск{% endblock %}</title>
+{% load static %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+{% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<nav class="navbar-public">
+  <a href="{% url 'home' %}" class="navbar-brand">
+    <i class="fa-solid fa-paw"></i> ZooHotel
+  </a>
+  <ul class="nav-links">
+    <li><a href="{% url 'home' %}" {% if request.resolver_match.url_name == 'home' %}class="active"{% endif %}>Главная</a></li>
+    <li><a href="{% url 'rooms' %}" {% if request.resolver_match.url_name == 'rooms' %}class="active"{% endif %}>Номера</a></li>
+    <li><a href="{% url 'services' %}" {% if request.resolver_match.url_name == 'services' %}class="active"{% endif %}>Услуги</a></li>
+    <li><a href="{% url 'booking' %}" {% if request.resolver_match.url_name == 'booking' %}class="active"{% endif %}>Бронирование</a></li>
+    {% if user.is_authenticated %}
+      {% if user.role == 'admin' or user.role == 'manager' %}
+        <li><a href="{% url 'admin_dashboard' %}"><i class="fa-solid fa-gauge"></i> Панель</a></li>
+      {% elif user.role == 'caretaker' %}
+        <li><a href="{% url 'caretaker_tasks' %}"><i class="fa-solid fa-list-check"></i> Задачи</a></li>
+      {% else %}
+        <li><a href="{% url 'cabinet_profile' %}"><i class="fa-regular fa-user"></i> Кабинет</a></li>
+      {% endif %}
+      <li><a href="{% url 'logout' %}" class="btn-nav"><i class="fa-solid fa-right-from-bracket"></i> Выйти</a></li>
+    {% else %}
+      <li><a href="{% url 'login' %}" class="btn-nav"><i class="fa-solid fa-right-to-bracket"></i> Войти</a></li>
+    {% endif %}
+  </ul>
+</nav>
+
+<div style="min-height:calc(100vh - 68px); display:flex; flex-direction:column;">
+{% if messages %}
+  <div style="padding:.75rem 1.5rem 0;">
+    {% for msg in messages %}
+      <div class="alert alert-{{ msg.tags }} alert-auto">
+        <i class="fa-solid {% if msg.tags == 'success' %}fa-circle-check{% elif msg.tags == 'error' or msg.tags == 'danger' %}fa-circle-xmark{% elif msg.tags == 'warning' %}fa-triangle-exclamation{% else %}fa-circle-info{% endif %}"></i>
+        {{ msg }}
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% block content %}{% endblock %}
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand"><i class="fa-solid fa-paw"></i> ZooHotel</div>
+        <p class="footer-desc">Профессиональная зоогостиница в Ижевске.<br>Заботимся о ваших питомцах, как о своих.</p>
+      </div>
+      <div>
+        <div class="footer-title">Навигация</div>
+        <ul class="footer-links">
+          <li><a href="{% url 'home' %}">Главная</a></li>
+          <li><a href="{% url 'rooms' %}">Номера</a></li>
+          <li><a href="{% url 'services' %}">Услуги</a></li>
+          <li><a href="{% url 'booking' %}">Бронирование</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-title">Контакты</div>
+        <ul class="footer-links">
+          <li><i class="fa-solid fa-location-dot"></i> г. Ижевск</li>
+          <li><i class="fa-solid fa-phone"></i> +7 (3412) 00-00-00</li>
+          <li><i class="fa-solid fa-envelope"></i> info@zoohotel.ru</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2026 ZooHotel. Ижевск. Все права защищены.</span>
+      <span>Разработано в 2026 году</span>
+    </div>
+  </div>
+</footer>
+</div>
+
+<script src="{% static 'js/main.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

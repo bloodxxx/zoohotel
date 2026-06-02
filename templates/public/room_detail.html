@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+{% block title %}{{ room.name }} — ZooHotel{% endblock %}
+{% block extra_css %}
+<style>
+.gallery-hero {
+  border-radius: var(--radius);
+  overflow: hidden;
+  height: 360px;
+  background: linear-gradient(135deg, var(--primary-light), #d1fae5);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 7rem; color: var(--primary);
+  cursor: pointer;
+}
+.gallery-hero img { width:100%; height:100%; object-fit:cover; display:block; }
+.gallery-strip { display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:.6rem; margin-top:.6rem; }
+.gallery-strip-item {
+  height: 90px; border-radius: 8px; overflow: hidden;
+  cursor: pointer; border: 2px solid transparent;
+  transition: border-color .15s, transform .15s;
+  background: linear-gradient(135deg,#e8f5ee,#d1fae5);
+  display:flex; align-items:center; justify-content:center;
+}
+.gallery-strip-item:hover { border-color: var(--primary); transform: scale(1.03); }
+.gallery-strip-item img { width:100%; height:100%; object-fit:cover; display:block; }
+.lightbox {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,.88);
+  z-index:9999; align-items:center; justify-content:center;
+  backdrop-filter:blur(6px);
+}
+.lightbox.open { display:flex; }
+.lightbox img { max-width:92vw; max-height:88vh; border-radius:12px; object-fit:contain; }
+.lightbox-close { position:absolute; top:1.5rem; right:1.75rem; color:#fff; font-size:1.75rem; cursor:pointer; opacity:.8; }
+.lightbox-close:hover { opacity:1; }
+.lightbox-nav { position:absolute; top:50%; transform:translateY(-50%); color:#fff; font-size:2rem; cursor:pointer; opacity:.7; padding:.5rem; }
+.lightbox-nav:hover { opacity:1; }
+.lightbox-prev { left:1.5rem; }
+.lightbox-next { right:1.5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="padding:2.5rem 1.75rem;">
+
+  <a href="{% url 'rooms' %}" style="display:inline-flex;align-items:center;gap:.5rem;color:var(--muted);font-size:.85rem;margin-bottom:1.75rem;font-weight:500;">
+    <i class="fa-solid fa-arrow-left"></i> Все номера
+  </a>
+
+  <div style="display:grid;grid-template-columns:1fr 360px;gap:2rem;align-items:start;">
+    <div>
+      <!-- Gallery -->
+      <div class="gallery-hero" onclick="openLightbox(0)">
+        {% if room.image %}
+        <img src="{{ room.image.url }}" alt="{{ room.name }}">
+        {% elif images %}
+        <img src="{{ images.0.image.url }}" alt="{{ room.name }}">
+        {% else %}
+        {% if room.type == 'economy' %}<i class="fa-solid fa-house-chimney"></i>
+        {% elif room.type == 'standard' %}<i class="fa-solid fa-house-chimney-window"></i>
+        {% else %}<i class="fa-solid fa-star"></i>{% endif %}
+        {% endif %}
+      </div>
+
+      {% if images %}
+      <div class="gallery-strip">
+        {% for img in images %}
+        <div class="gallery-strip-item" onclick="openLightbox({{ forloop.counter0 }}{% if room.image %} + 1{% endif %})">
+          <img src="{{ img.image.url }}" alt="{{ img.caption }}">
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Lightbox -->
+      {% if room.image or images %}
+      <div class="lightbox" id="lightbox" onclick="closeLightboxBg(event)">
+        <span class="lightbox-close" onclick="closeLightbox()"><i class="fa-solid fa-xmark"></i></span>
+        <span class="lightbox-nav lightbox-prev" onclick="lightboxNav(-1,event)"><i class="fa-solid fa-chevron-left"></i></span>
+        <img id="lightbox-img" src="" alt="">
+        <span class="lightbox-nav lightbox-next" onclick="lightboxNav(1,event)"><i class="fa-solid fa-chevron-right"></i></span>
+      </div>
+      {% endif %}
+
+      <!-- Description -->
+      <div class="card" style="margin-top:1.5rem;">
+        <div class="card-header"><span style="font-weight:700;"><i class="fa-solid fa-circle-info" style="color:var(--primary);"></i> Описание</span></div>
+        <div class="card-body">
+          <p style="color:var(--text);line-height:1.85;margin:0;font-size:.93rem;">
+            {% if room.description %}{{ room.description }}{% else %}Уютный номер для комфортного проживания вашего питомца. Наши специалисты обеспечат заботу и внимание в течение всего периода пребывания.{% endif %}
+          </p>
+        </div>
+      </div>
+
+      <!-- What's included -->
+      <div class="card" style="margin-top:1rem;">
+        <div class="card-header"><span style="font-weight:700;"><i class="fa-solid fa-circle-check" style="color:var(--success);"></i> Включено в стоимость</span></div>
+        <div class="card-body">
+          <div class="included-grid">
+            {% if room.type == 'economy' %}
+            <div class="included-item"><i class="fa-solid fa-bowl-food"></i><span>Кормление 2 раза в день</span></div>
+            <div class="included-item"><i class="fa-solid fa-person-walking"></i><span>Выгул 1 раз в день</span></div>
+            <div class="included-item"><i class="fa-solid fa-broom"></i><span>Ежедневная уборка</span></div>
+            <div class="included-item"><i class="fa-solid fa-eye"></i><span>Ежедневный осмотр</span></div>
+            {% elif room.type == 'standard' %}
+            <div class="included-item"><i class="fa-solid fa-bowl-food"></i><span>Кормление 3 раза в день</span></div>
+            <div class="included-item"><i class="fa-solid fa-person-walking"></i><span>Выгул 2 раза в день</span></div>
+            <div class="included-item"><i class="fa-solid fa-broom"></i><span>Уборка 2 раза в день</span></div>
+            <div class="included-item"><i class="fa-solid fa-bed"></i><span>Мягкая подстилка</span></div>
+            <div class="included-item"><i class="fa-solid fa-eye"></i><span>Ежедневный осмотр</span></div>
+            <div class="included-item"><i class="fa-solid fa-face-smile"></i><span>Индивидуальное внимание</span></div>
+            {% else %}
+            <div class="included-item"><i class="fa-solid fa-bowl-food"></i><span>Кормление 4 раза в день</span></div>
+            <div class="included-item"><i class="fa-solid fa-person-walking"></i><span>Выгул 3 раза в день</span></div>
+            <div class="included-item"><i class="fa-solid fa-broom"></i><span>Уборка 3 раза в день</span></div>
+            <div class="included-item"><i class="fa-solid fa-bed"></i><span>Ортопедическая подстилка</span></div>
+            <div class="included-item"><i class="fa-solid fa-gamepad"></i><span>Игрушки и активности</span></div>
+            <div class="included-item"><i class="fa-solid fa-video"></i><span>Видеонаблюдение</span></div>
+            <div class="included-item"><i class="fa-solid fa-clock"></i><span>Уход 24/7</span></div>
+            <div class="included-item"><i class="fa-solid fa-user-nurse"></i><span>Персональный куратор</span></div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Booking card -->
+    <div style="position:sticky;top:84px;">
+      <div class="card">
+        <div class="card-body">
+          <div style="display:flex;gap:.4rem;margin-bottom:1rem;">
+            <span class="room-badge badge-{{ room.type }}">{{ room.get_type_display }}</span>
+            <span class="room-badge badge-{{ room.status }}">{{ room.get_status_display }}</span>
+          </div>
+          <h1 style="font-size:1.5rem;font-weight:800;color:var(--dark);margin:0 0 .5rem;letter-spacing:-.2px;">{{ room.name }}</h1>
+          <div style="font-size:2.2rem;font-weight:900;color:var(--primary);margin:.75rem 0 .1rem;letter-spacing:-.5px;">{{ room.price_per_day|floatformat:0 }} ₽</div>
+          <div style="font-size:.8rem;color:var(--muted);margin-bottom:1.5rem;font-weight:500;">за сутки</div>
+          <div style="background:var(--bg);border-radius:10px;padding:1rem;margin-bottom:1.25rem;font-size:.85rem;border:1px solid var(--border);">
+            <div style="display:flex;justify-content:space-between;padding:.3rem 0;border-bottom:1px solid var(--border);margin-bottom:.3rem;">
+              <span style="color:var(--muted);font-weight:500;">Тип номера</span>
+              <span style="font-weight:700;">{{ room.get_type_display }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:.3rem 0;">
+              <span style="color:var(--muted);font-weight:500;">Статус</span>
+              <span style="font-weight:700;color:{% if room.status == 'available' %}var(--success){% else %}var(--danger){% endif %};">{{ room.get_status_display }}</span>
+            </div>
+          </div>
+          {% if room.status == 'available' %}
+          <a href="{% url 'booking' %}?room={{ room.pk }}" class="btn btn-primary btn-lg" style="width:100%;justify-content:center;">
+            <i class="fa-solid fa-calendar-plus"></i> Забронировать
+          </a>
+          {% else %}
+          <div class="btn btn-secondary" style="width:100%;justify-content:center;cursor:default;opacity:.6;">
+            <i class="fa-solid fa-wrench"></i> Временно недоступен
+          </div>
+          {% endif %}
+          <div style="margin-top:1.1rem;font-size:.8rem;color:var(--muted);text-align:center;line-height:2;">
+            <div><i class="fa-solid fa-circle-check" style="color:var(--success);"></i> Бесплатная отмена за 24 часа</div>
+            <div><i class="fa-solid fa-circle-check" style="color:var(--success);"></i> Подтверждение в течение 1 часа</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+const allSrcs = [
+  {% if room.image %}'{{ room.image.url }}',{% endif %}
+  {% for img in images %}'{{ img.image.url }}',{% endfor %}
+];
+let currentIdx = 0;
+
+function openLightbox(idx) {
+  if (!allSrcs.length) return;
+  currentIdx = idx;
+  document.getElementById('lightbox-img').src = allSrcs[currentIdx];
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function closeLightboxBg(e) {
+  if (e.target === document.getElementById('lightbox')) closeLightbox();
+}
+
+function lightboxNav(dir, e) {
+  e.stopPropagation();
+  currentIdx = (currentIdx + dir + allSrcs.length) % allSrcs.length;
+  document.getElementById('lightbox-img').src = allSrcs[currentIdx];
+}
+
+document.addEventListener('keydown', e => {
+  const lb = document.getElementById('lightbox');
+  if (!lb || !lb.classList.contains('open')) return;
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowLeft') lightboxNav(-1, e);
+  if (e.key === 'ArrowRight') lightboxNav(1, e);
+});
+</script>
+{% endblock %}
+{% endblock %}

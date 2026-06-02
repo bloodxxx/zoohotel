@@ -1,0 +1,24 @@
+{% extends 'base_admin.html' %}
+{% block title %}{{ title }} — ZooHotel{% endblock %}
+{% block topbar_title %}{{ title }}{% endblock %}
+{% block content %}
+<h1 class="page-title"><i class="fa-solid fa-list"></i> {{ title }}</h1>
+<div class="card" style="max-width:520px;">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% for field in form %}
+      <div class="form-group">
+        <label class="form-label">{{ field.label }}{% if field.field.required %}<span class="req">*</span>{% endif %}</label>
+        {{ field }}
+        {% if field.errors %}<div class="invalid-feedback" style="display:block;">{{ field.errors.0 }}</div>{% endif %}
+      </div>
+      {% endfor %}
+      <div style="display:flex;gap:.75rem;">
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Сохранить</button>
+        <a href="{% url 'services_admin' %}" class="btn btn-secondary">Отмена</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

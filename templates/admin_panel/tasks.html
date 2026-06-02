@@ -1,0 +1,78 @@
+{% extends 'base_admin.html' %}
+{% block title %}Задачи ухода — ZooHotel{% endblock %}
+{% block topbar_title %}Задачи ухода{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h1 class="page-title" style="margin:0;"><i class="fa-solid fa-list-check"></i> Задачи ухода</h1>
+  <div style="display:flex;gap:.5rem;">
+    <a href="{% url 'tasks_admin' %}" class="btn btn-sm {% if not show_archive %}btn-primary{% else %}btn-secondary{% endif %}">Активные</a>
+    <a href="{% url 'tasks_admin' %}?archive=1" class="btn btn-sm {% if show_archive %}btn-primary{% else %}btn-secondary{% endif %}">Архив</a>
+    <a href="{% url 'task_create' %}" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i> Добавить</a>
+  </div>
+</div>
+
+<div class="table-card" style="margin-bottom:1rem;">
+  <div class="table-toolbar">
+    <form method="get" style="display:flex;gap:.5rem;flex-wrap:wrap;">
+      <select name="status" class="form-select" style="width:160px;">
+        <option value="">Все статусы</option>
+        {% for val,label in status_choices %}
+        <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <input type="date" name="date" value="{{ date_filter }}" class="form-control" style="width:145px;">
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-magnifying-glass"></i></button>
+      <a href="{% url 'tasks_admin' %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-xmark"></i></a>
+    </form>
+  </div>
+</div>
+
+{% regroup tasks by booking as tasks_by_booking %}
+{% for booking_group in tasks_by_booking %}
+<div class="card mb-2">
+  <div class="card-header" style="background:var(--primary-light);">
+    <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
+      <span style="font-weight:700;color:var(--primary);"><i class="fa-solid fa-paw"></i> {{ booking_group.grouper.animal.name }}</span>
+      <span style="font-size:.8rem;color:var(--muted);">Бронь #{{ booking_group.grouper.pk }}</span>
+      <span style="font-size:.8rem;color:var(--muted);"><i class="fa-solid fa-house"></i> {{ booking_group.grouper.room.name }}</span>
+      <span style="font-size:.8rem;color:var(--muted);"><i class="fa-regular fa-calendar"></i> {{ booking_group.grouper.check_in_date|date:"d.m" }} — {{ booking_group.grouper.check_out_date|date:"d.m.Y" }}</span>
+      <a href="{% url 'booking_detail' booking_group.grouper.pk %}" class="btn btn-secondary btn-sm" style="margin-left:auto;"><i class="fa-solid fa-eye"></i></a>
+    </div>
+  </div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:130px;">Время</th>
+          <th>Задача</th>
+          <th>Сотрудник</th>
+          <th style="width:110px;">Статус</th>
+          <th style="width:100px;">Факт. время</th>
+          <th style="width:50px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in booking_group.list %}
+        <tr style="{% if t.status == 'completed' %}opacity:.65;{% endif %}">
+          <td style="font-size:.85rem;font-weight:600;color:var(--primary);">{{ t.scheduled_time|date:"d.m H:i" }}</td>
+          <td>
+            <div style="font-weight:600;font-size:.9rem;">{{ t.title }}</div>
+            {% if t.service %}<div style="font-size:.75rem;color:var(--muted);margin-top:.1rem;"><i class="fa-solid fa-star" style="color:var(--primary);font-size:.65rem;"></i> {{ t.service.name }}</div>{% endif %}
+            {% if t.instructions %}<div style="font-size:.75rem;color:var(--muted);margin-top:.1rem;">{{ t.instructions|truncatechars:60 }}</div>{% endif %}
+          </td>
+          <td style="font-size:.85rem;">{{ t.assigned_to.get_full_name|default:t.assigned_to.username|default:"—" }}</td>
+          <td><span class="status-badge badge-{{ t.status }}">{{ t.get_status_display }}</span></td>
+          <td style="font-size:.8rem;color:var(--muted);">
+            {% if t.start_time %}{{ t.start_time|date:"H:i" }}{% if t.end_time %} — {{ t.end_time|date:"H:i" }}{% endif %}{% else %}—{% endif %}
+          </td>
+          <td><a href="{% url 'task_edit' t.pk %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-pen"></i></a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% empty %}
+<div class="empty-state"><i class="fa-solid fa-list-check"></i><p>Задач не найдено</p></div>
+{% endfor %}
+{% endblock %}

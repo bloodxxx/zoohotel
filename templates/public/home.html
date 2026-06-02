@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% block title %}ZooHotel — Зоогостиница в Ижевске{% endblock %}
+{% block content %}
+
+<section class="hero">
+  <div class="container">
+    <div class="hero-eyebrow"><i class="fa-solid fa-location-dot"></i> Ижевск, 2026</div>
+    <h1>Зоогостиница<br><span>ZooHotel</span></h1>
+    <p>Профессиональный уход за вашим питомцем. Комфортные номера, квалифицированный персонал, забота круглосуточно.</p>
+    <div class="hero-btns">
+      <a href="{% url 'booking' %}" class="btn btn-white btn-lg btn-pill"><i class="fa-solid fa-calendar-plus"></i> Забронировать</a>
+      <a href="{% url 'rooms' %}" class="btn btn-lg btn-pill" style="border:2px solid rgba(255,255,255,.4);color:#fff;background:rgba(255,255,255,.08);">
+        <i class="fa-solid fa-door-open"></i> Наши номера
+      </a>
+    </div>
+  </div>
+</section>
+
+<section style="padding:2.5rem 0;background:var(--white);border-bottom:1px solid var(--border);">
+  <div class="container">
+    <div class="grid grid-4">
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="fa-solid fa-house"></i></div>
+        <div>
+          <div class="stat-value">{{ rooms|length }}+</div>
+          <div class="stat-label">Номеров и вольеров</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon amber"><i class="fa-solid fa-award"></i></div>
+        <div>
+          <div class="stat-value">5</div>
+          <div class="stat-label">Лет опыта</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-user-doctor"></i></div>
+        <div>
+          <div class="stat-value">24/7</div>
+          <div class="stat-label">Ветеринарная помощь</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="fa-solid fa-heart"></i></div>
+        <div>
+          <div class="stat-value">100%</div>
+          <div class="stat-label">Довольных клиентов</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% if rooms %}
+<section class="section">
+  <div class="container">
+    <h2 class="section-title">Наши номера</h2>
+    <p class="section-sub">Комфортные условия для питомцев любого размера</p>
+    <div class="grid grid-3">
+      {% for room in rooms %}
+      <div class="room-card">
+        <a href="{% url 'room_detail' room.pk %}" style="display:block;color:inherit;">
+          <div class="room-card-img">
+            {% if room.image %}
+            <img src="{{ room.image.url }}" alt="{{ room.name }}">
+            <div class="room-card-img-overlay"></div>
+            {% else %}
+            {% if room.type == 'economy' %}<i class="fa-solid fa-house-chimney"></i>
+            {% elif room.type == 'standard' %}<i class="fa-solid fa-house-chimney-window"></i>
+            {% else %}<i class="fa-solid fa-star"></i>{% endif %}
+            {% endif %}
+            <div class="room-card-badges">
+              <span class="room-badge badge-{{ room.type }}" {% if room.image %}style="background:rgba(255,255,255,.92);"{% endif %}>{{ room.get_type_display }}</span>
+            </div>
+          </div>
+        </a>
+        <div class="room-card-body">
+          <h3 style="font-size:1.05rem;font-weight:700;margin:0 0 .3rem;"><a href="{% url 'room_detail' room.pk %}" style="color:var(--dark);">{{ room.name }}</a></h3>
+          <p style="font-size:.84rem;color:var(--muted);margin:0 0 1rem;line-height:1.6;">{{ room.description|truncatechars:80 }}</p>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:.9rem;border-top:1px solid var(--border);">
+            <span class="price-tag">{{ room.price_per_day|floatformat:0 }} ₽<span style="font-size:.78rem;font-weight:500;color:var(--muted);"> / сут.</span></span>
+            {% if room.status == 'available' %}
+            <a href="{% url 'booking' %}?room={{ room.pk }}" class="btn btn-primary btn-sm btn-pill"><i class="fa-solid fa-calendar-plus"></i> Забронировать</a>
+            {% else %}
+            <span style="font-size:.78rem;color:var(--muted);"><i class="fa-solid fa-wrench"></i> Недоступен</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="text-center mt-3">
+      <a href="{% url 'rooms' %}" class="btn btn-outline btn-pill"><i class="fa-solid fa-arrow-right"></i> Все номера</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="section section-bg-light">
+  <div class="container">
+    <h2 class="section-title">Почему выбирают нас</h2>
+    <p class="section-sub">Мы создали всё необходимое для комфорта вашего питомца</p>
+    <div class="grid grid-3">
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-user-doctor"></i></div>
+        <div class="feature-title">Ветеринарный контроль</div>
+        <div class="feature-desc">Ежедневный осмотр животных квалифицированным ветеринаром. Первая помощь при необходимости.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-utensils"></i></div>
+        <div class="feature-title">Правильное питание</div>
+        <div class="feature-desc">Индивидуальный рацион с учётом особенностей и предпочтений питомца.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-person-walking"></i></div>
+        <div class="feature-title">Прогулки и активность</div>
+        <div class="feature-desc">Регулярные выгулы, активные игры и упражнения для поддержания здоровья.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-scissors"></i></div>
+        <div class="feature-title">Груминг</div>
+        <div class="feature-desc">Стрижка, мытьё, уход за шерстью. Профессиональный груминг для любых пород.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-bell"></i></div>
+        <div class="feature-title">Уведомления</div>
+        <div class="feature-desc">Регулярные обновления о состоянии питомца. Вы всегда в курсе.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <div class="feature-title">Безопасность</div>
+        <div class="feature-desc">Видеонаблюдение, защищённые вольеры, охрана территории 24/7.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% if services %}
+<section class="section">
+  <div class="container">
+    <h2 class="section-title">Наши услуги</h2>
+    <p class="section-sub">Полный комплекс для вашего питомца</p>
+    <div class="grid grid-3">
+      {% for svc in services %}
+      <div class="card card-body" style="display:flex;gap:1rem;align-items:flex-start;padding:1.25rem 1.4rem;">
+        <div style="width:44px;height:44px;border-radius:12px;background:var(--primary-light);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">
+          <i class="fa-solid fa-paw"></i>
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:.93rem;color:var(--dark);">{{ svc.name }}</div>
+          <div style="font-size:.76rem;color:var(--muted);margin:.2rem 0 .4rem;font-weight:500;text-transform:uppercase;letter-spacing:.04em;">{{ svc.category }}</div>
+          <div style="font-weight:800;color:var(--primary);font-size:.95rem;">{{ svc.price|floatformat:0 }} ₽<span style="font-weight:400;color:var(--muted);font-size:.78rem;"> / {{ svc.unit }}</span></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="text-center mt-3">
+      <a href="{% url 'services' %}" class="btn btn-outline btn-pill"><i class="fa-solid fa-arrow-right"></i> Все услуги</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="section" style="background:linear-gradient(135deg,#0d3322,#1a6b47);color:#fff;text-align:center;">
+  <div class="container">
+    <h2 style="font-size:2rem;font-weight:800;margin-bottom:.75rem;letter-spacing:-.3px;">Готовы забронировать?</h2>
+    <p style="opacity:.8;margin-bottom:2rem;font-size:1rem;">Оставьте заявку онлайн — займёт всего 2 минуты</p>
+    <a href="{% url 'booking' %}" class="btn btn-white btn-lg btn-pill"><i class="fa-solid fa-calendar-plus"></i> Забронировать сейчас</a>
+    <div style="margin-top:1.25rem;font-size:.84rem;color:rgba(255,255,255,.55);">
+      Или <a href="{% url 'register' %}" style="color:rgba(255,255,255,.8);font-weight:600;">зарегистрируйтесь</a> для управления бронированиями
+    </div>
+  </div>
+</section>
+{% endblock %}

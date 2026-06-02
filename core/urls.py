@@ -1,0 +1,81 @@
+from django.urls import path
+from . import views_public as pub
+from . import views_cabinet as cab
+from . import views_admin as adm
+from . import views_caretaker as care
+
+urlpatterns = [
+    # Public
+    path('', pub.home, name='home'),
+    path('rooms/', pub.rooms_list, name='rooms'),
+    path('rooms/<int:pk>/', pub.room_detail, name='room_detail'),
+    path('services/', pub.services_list, name='services'),
+    path('booking/', pub.booking_view, name='booking'),
+    path('booking/success/', pub.booking_success, name='booking_success'),
+    path('login/', pub.login_view, name='login'),
+    path('logout/', pub.logout_view, name='logout'),
+    path('register/', pub.register_view, name='register'),
+    path('forgot-password/', pub.password_reset_request, name='password_reset_request'),
+    path('reset-password/<str:token>/', pub.password_reset_confirm, name='password_reset_confirm'),
+
+    # Cabinet
+    path('cabinet/', cab.cabinet_profile, name='cabinet_profile'),
+    path('cabinet/password/', cab.cabinet_change_password, name='cabinet_password'),
+    path('cabinet/animals/', cab.cabinet_animals, name='cabinet_animals'),
+    path('cabinet/animals/add/', cab.cabinet_animal_add, name='cabinet_animal_add'),
+    path('cabinet/animals/<int:pk>/edit/', cab.cabinet_animal_edit, name='cabinet_animal_edit'),
+    path('cabinet/animals/<int:pk>/delete/', cab.cabinet_animal_delete, name='cabinet_animal_delete'),
+    path('cabinet/bookings/', cab.cabinet_bookings, name='cabinet_bookings'),
+    path('cabinet/bookings/new/', cab.cabinet_new_booking, name='cabinet_new_booking'),
+    path('cabinet/bookings/<int:pk>/rebook/', cab.cabinet_rebook, name='cabinet_rebook'),
+    path('cabinet/bookings/<int:pk>/delete/', cab.cabinet_booking_delete, name='cabinet_booking_delete'),
+    path('cabinet/bookings/<int:booking_pk>/pay/', cab.cabinet_pay, name='cabinet_pay'),
+    path('cabinet/bookings/<int:booking_pk>/pay/online/', cab.cabinet_pay_yookassa, name='cabinet_pay_yookassa'),
+    path('payment/return/', cab.payment_return, name='payment_return'),
+    path('payment/webhook/', cab.yookassa_webhook, name='yookassa_webhook'),
+    path('api/available-rooms/', cab.api_available_rooms, name='api_available_rooms'),
+    path('api/client-animals/', adm.api_client_animals, name='api_client_animals'),
+
+    # Admin panel
+    path('panel/', adm.dashboard, name='admin_dashboard'),
+    path('panel/bookings/', adm.bookings_list, name='bookings_admin'),
+    path('panel/bookings/create/', adm.booking_create, name='booking_create'),
+    path('panel/bookings/<int:pk>/', adm.booking_detail, name='booking_detail'),
+    path('panel/bookings/<int:pk>/edit/', adm.booking_edit, name='booking_edit'),
+    path('panel/bookings/<int:pk>/status/', adm.booking_status, name='booking_status'),
+    path('panel/bookings/<int:pk>/delete/', adm.booking_delete, name='booking_delete'),
+    path('panel/clients/', adm.clients_list, name='clients_admin'),
+    path('panel/clients/<int:pk>/', adm.client_detail, name='client_detail'),
+    path('panel/animals/', adm.animals_list, name='animals_admin'),
+    path('panel/animals/<int:pk>/', adm.animal_detail, name='animal_detail'),
+    path('panel/animals/<int:pk>/document/', adm.animal_document_upload, name='animal_document_upload'),
+    path('panel/rooms/', adm.rooms_list_admin, name='rooms_admin'),
+    path('panel/rooms/create/', adm.room_create, name='room_create'),
+    path('panel/rooms/<int:pk>/edit/', adm.room_edit, name='room_edit'),
+    path('panel/rooms/<int:pk>/delete/', adm.room_delete, name='room_delete'),
+    path('panel/rooms/<int:pk>/images/upload/', adm.room_image_upload, name='room_image_upload'),
+    path('panel/rooms/images/<int:pk>/delete/', adm.room_image_delete, name='room_image_delete'),
+    path('panel/services/', adm.services_list_admin, name='services_admin'),
+    path('panel/services/create/', adm.service_create, name='service_create'),
+    path('panel/services/<int:pk>/edit/', adm.service_edit, name='service_edit'),
+    path('panel/tasks/', adm.tasks_list, name='tasks_admin'),
+    path('panel/tasks/create/', adm.task_create, name='task_create'),
+    path('panel/tasks/<int:pk>/edit/', adm.task_edit, name='task_edit'),
+    path('panel/payments/', adm.payments_list, name='payments_admin'),
+    path('panel/payments/create/', adm.payment_create, name='payment_create'),
+    path('panel/payments/<int:pk>/edit/', adm.payment_edit, name='payment_edit'),
+    path('panel/payments/<int:pk>/mark-paid/', adm.payment_mark_paid, name='payment_mark_paid'),
+    path('panel/staff/', adm.staff_list, name='staff_admin'),
+    path('panel/staff/create/', adm.staff_create, name='staff_create'),
+    path('panel/staff/<int:pk>/edit/', adm.staff_edit, name='staff_edit'),
+    path('panel/staff/<int:pk>/toggle/', adm.staff_toggle_block, name='staff_toggle'),
+    path('panel/reports/', adm.reports, name='reports_admin'),
+    path('panel/reports/export/', adm.reports_export, name='reports_export'),
+    path('panel/logs/', adm.logs_list, name='logs_admin'),
+
+    # Caretaker
+    path('caretaker/', care.caretaker_tasks, name='caretaker_tasks'),
+    path('caretaker/task/<int:pk>/start/', care.task_start, name='task_start'),
+    path('caretaker/task/<int:pk>/complete/', care.task_complete, name='task_complete'),
+    path('caretaker/task/<int:pk>/note/', care.task_note, name='task_note'),
+]

@@ -1,0 +1,66 @@
+{% extends 'base_cabinet.html' %}
+{% block title %}Результат оплаты — ZooHotel{% endblock %}
+{% block cabinet_content %}
+<h2 class="page-title"><i class="fa-solid fa-credit-card"></i> Результат оплаты</h2>
+
+{% if payment %}
+  {% if payment.status == 'paid' %}
+  <div class="card" style="max-width:480px;">
+    <div class="card-body" style="text-align:center;padding:2rem 1.5rem;">
+      <div style="font-size:3rem;color:var(--success);margin-bottom:1rem;">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <h3 style="margin:0 0 .5rem;color:var(--success);">Оплата прошла успешно!</h3>
+      <p style="color:var(--text-muted);margin:0 0 1.5rem;">
+        Платёж на сумму <strong>{{ payment.amount|floatformat:0 }} ₽</strong> подтверждён.<br>
+        Бронирование #{{ payment.booking.pk }} активно.
+      </p>
+      <a href="{% url 'cabinet_bookings' %}" class="btn btn-primary">
+        <i class="fa-solid fa-list"></i> Мои бронирования
+      </a>
+    </div>
+  </div>
+
+  {% elif payment.status == 'failed' %}
+  <div class="card" style="max-width:480px;">
+    <div class="card-body" style="text-align:center;padding:2rem 1.5rem;">
+      <div style="font-size:3rem;color:var(--danger);margin-bottom:1rem;">
+        <i class="fa-solid fa-circle-xmark"></i>
+      </div>
+      <h3 style="margin:0 0 .5rem;color:var(--danger);">Оплата отменена</h3>
+      <p style="color:var(--text-muted);margin:0 0 1.5rem;">
+        Платёж не был завершён. Вы можете попробовать снова.
+      </p>
+      <div style="display:flex;gap:.75rem;justify-content:center;">
+        <a href="{% url 'cabinet_pay_yookassa' payment.booking.pk %}" class="btn btn-primary">
+          <i class="fa-solid fa-rotate-right"></i> Попробовать снова
+        </a>
+        <a href="{% url 'cabinet_bookings' %}" class="btn btn-secondary">Мои бронирования</a>
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+  <div class="card" style="max-width:480px;">
+    <div class="card-body" style="text-align:center;padding:2rem 1.5rem;">
+      <div style="font-size:3rem;color:var(--warning);margin-bottom:1rem;">
+        <i class="fa-solid fa-clock"></i>
+      </div>
+      <h3 style="margin:0 0 .5rem;">Платёж обрабатывается</h3>
+      <p style="color:var(--text-muted);margin:0 0 1.5rem;">
+        Статус платежа уточняется. Обновите страницу через несколько секунд или проверьте раздел бронирований.
+      </p>
+      <a href="{% url 'cabinet_bookings' %}" class="btn btn-secondary">Мои бронирования</a>
+    </div>
+  </div>
+  {% endif %}
+
+{% else %}
+  <div class="card" style="max-width:480px;">
+    <div class="card-body" style="text-align:center;padding:2rem 1.5rem;">
+      <p style="color:var(--text-muted);margin:0 0 1rem;">Платёж не найден.</p>
+      <a href="{% url 'cabinet_bookings' %}" class="btn btn-secondary">Мои бронирования</a>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

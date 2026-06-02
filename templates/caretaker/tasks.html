@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Задачи — ZooHotel</title>
+{% load static %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+<style>
+  * { box-sizing: border-box; }
+  body { background: #f0fdf4; font-family: 'Inter', sans-serif; margin: 0; }
+
+  /* Header */
+  .hdr {
+    background: var(--primary);
+    color: #fff;
+    padding: .85rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  }
+  .hdr-brand { font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: .5rem; }
+  .hdr-right { display: flex; align-items: center; gap: 1.25rem; font-size: .85rem; }
+  .hdr-right a { color: rgba(255,255,255,.75); text-decoration: none; }
+  .hdr-right a:hover { color: #fff; }
+
+  /* Layout */
+  .wrap { max-width: 780px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+
+  /* Date nav */
+  .date-nav {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: .6rem .9rem;
+    margin-bottom: 1rem;
+  }
+  .date-nav form { display: flex; align-items: center; gap: .5rem; flex: 1; }
+  .date-nav input[type=date] { border: 1.5px solid var(--border); border-radius: 6px; padding: .35rem .6rem; font-size: .9rem; font-family: inherit; color: var(--text); background: var(--bg); }
+  .date-nav input[type=date]:focus { outline: none; border-color: var(--primary); }
+  .btn-nav-day { background: none; border: 1.5px solid var(--border); border-radius: 6px; padding: .35rem .65rem; cursor: pointer; color: var(--text); font-size: .85rem; }
+  .btn-nav-day:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+  .btn-today { background: var(--primary-light); border: 1.5px solid var(--primary); border-radius: 6px; padding: .35rem .75rem; cursor: pointer; color: var(--primary); font-size: .82rem; font-weight: 600; }
+  .btn-today:hover { background: var(--primary); color: #fff; }
+
+  /* Stats bar */
+  .stats-bar {
+    display: flex;
+    gap: .6rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+  }
+  .stat-chip {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .4rem .85rem;
+    border-radius: 20px;
+    font-size: .82rem;
+    font-weight: 600;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: opacity .15s, box-shadow .15s;
+  }
+  .stat-chip:hover { opacity: .85; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+  .chip-all    { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+  .chip-wait   { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+  .chip-active { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+  .chip-done   { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
+  .chip-all.active    { border-color: #94a3b8; box-shadow: 0 0 0 2px #94a3b8; }
+  .chip-wait.active   { border-color: #f59e0b; box-shadow: 0 0 0 2px #f59e0b; }
+  .chip-active.active { border-color: #3b82f6; box-shadow: 0 0 0 2px #3b82f6; }
+  .chip-done.active   { border-color: #22c55e; box-shadow: 0 0 0 2px #22c55e; }
+
+  /* Timeline */
+  .timeline { position: relative; }
+  .tl-hour {
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+    margin-bottom: .25rem;
+  }
+  .tl-time {
+    width: 42px;
+    flex-shrink: 0;
+    font-size: .78rem;
+    font-weight: 700;
+    color: var(--muted);
+    padding-top: 1rem;
+    text-align: right;
+  }
+  .tl-line {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    padding-top: .9rem;
+  }
+  .tl-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+  .tl-dot.pending   { background: #f59e0b; }
+  .tl-dot.in_progress { background: #3b82f6; }
+  .tl-dot.completed { background: #22c55e; }
+  .tl-vline { width: 2px; background: var(--border); flex: 1; min-height: 12px; }
+
+  /* Task card */
+  .task-card {
+    flex: 1;
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: .9rem 1rem;
+    margin-bottom: .5rem;
+    transition: box-shadow .15s;
+  }
+  .task-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+  .task-card.in_progress { border-color: #93c5fd; background: #f0f7ff; }
+  .task-card.completed   { opacity: .65; }
+
+  .tc-top { display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem; margin-bottom: .4rem; }
+  .tc-title { font-size: .97rem; font-weight: 700; color: var(--dark); }
+  .tc-animal { font-size: .82rem; color: var(--muted); margin-top: .1rem; }
+  .tc-animal i { color: var(--primary); }
+
+  .sbadge {
+    font-size: .72rem;
+    font-weight: 700;
+    padding: .2rem .6rem;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .sbadge.pending    { background: #fef3c7; color: #92400e; }
+  .sbadge.in_progress { background: #dbeafe; color: #1e40af; }
+  .sbadge.completed  { background: #d1fae5; color: #065f46; }
+
+  .tc-meta { display: flex; flex-wrap: wrap; gap: .6rem; font-size: .78rem; color: var(--muted); margin-bottom: .5rem; }
+  .tc-meta span { display: flex; align-items: center; gap: .25rem; }
+
+  .tc-services {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 6px;
+    padding: .4rem .7rem;
+    font-size: .78rem;
+    color: #15803d;
+    margin-bottom: .5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem;
+  }
+  .svc-tag {
+    background: #dcfce7;
+    border-radius: 4px;
+    padding: .15rem .45rem;
+    font-weight: 600;
+  }
+
+  .tc-alert {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 6px;
+    padding: .4rem .7rem;
+    font-size: .78rem;
+    color: #92400e;
+    margin-bottom: .5rem;
+  }
+
+  .tc-note {
+    background: var(--bg);
+    border-radius: 6px;
+    padding: .4rem .7rem;
+    font-size: .78rem;
+    color: var(--muted);
+    margin-bottom: .5rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .tc-actions { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+  .tc-actions .btn { font-size: .82rem; padding: .38rem .85rem; min-width: 0; }
+  .tc-actions .note-input {
+    flex: 1;
+    min-width: 160px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: .38rem .65rem;
+    font-size: .82rem;
+    font-family: inherit;
+    color: var(--text);
+  }
+  .tc-actions .note-input:focus { outline: none; border-color: var(--primary); }
+
+  .tc-times { font-size: .72rem; color: var(--muted); margin-top: .4rem; }
+
+  /* Empty */
+  .empty { text-align: center; padding: 4rem 1rem; }
+  .empty-icon { font-size: 3.5rem; color: #bbf7d0; margin-bottom: .75rem; }
+  .empty h3 { color: var(--primary); margin: 0 0 .4rem; font-size: 1.1rem; }
+  .empty p { color: var(--muted); font-size: .88rem; margin: 0; }
+
+  /* Alert */
+  .alert { padding: .75rem 1rem; border-radius: 8px; margin-bottom: .75rem; font-size: .88rem; display: flex; align-items: center; gap: .5rem; }
+  .alert-success { background: #d1fae5; color: #065f46; }
+  .alert-error, .alert-danger { background: #fee2e2; color: #991b1b; }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-brand"><i class="fa-solid fa-paw"></i> ZooHotel</div>
+  <div class="hdr-right">
+    <span><i class="fa-regular fa-user"></i> {{ request.user.get_full_name|default:request.user.username }}</span>
+    <a href="{% url 'logout' %}"><i class="fa-solid fa-right-from-bracket"></i> Выйти</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+  {% if messages %}
+    {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags }}">
+      <i class="fa-solid {% if msg.tags == 'success' %}fa-circle-check{% else %}fa-circle-exclamation{% endif %}"></i>
+      {{ msg }}
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Date navigation -->
+  <div class="date-nav">
+    <form method="get" style="flex:1;display:flex;align-items:center;gap:.5rem;">
+      <button type="button" class="btn-nav-day" onclick="shiftDate(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+      <input type="date" name="date" id="dateInput" value="{{ date_filter }}" onchange="this.form.submit()">
+      <button type="button" class="btn-nav-day" onclick="shiftDate(1)"><i class="fa-solid fa-chevron-right"></i></button>
+      <button type="button" class="btn-today" onclick="goToday()">Сегодня</button>
+    </form>
+    <span style="font-size:.82rem;color:var(--muted);font-weight:600;">
+      {% if date_filter %}{{ date_filter }}{% endif %}
+    </span>
+  </div>
+
+  <!-- Stats -->
+  {% if tasks or status_filter %}
+  <div class="stats-bar">
+    <a href="?date={{ date_filter }}" class="stat-chip chip-all {% if not status_filter %}active{% endif %}"><i class="fa-solid fa-list-check"></i> Всего: {{ count_pending|add:count_in_progress|add:count_completed }}</a>
+    <a href="?date={{ date_filter }}&status=pending" class="stat-chip chip-wait {% if status_filter == 'pending' %}active{% endif %}"><i class="fa-solid fa-hourglass-half"></i> Ожидает: {{ count_pending }}</a>
+    <a href="?date={{ date_filter }}&status=in_progress" class="stat-chip chip-active {% if status_filter == 'in_progress' %}active{% endif %}"><i class="fa-solid fa-spinner"></i> В работе: {{ count_in_progress }}</a>
+    <a href="?date={{ date_filter }}&status=completed" class="stat-chip chip-done {% if status_filter == 'completed' %}active{% endif %}"><i class="fa-solid fa-circle-check"></i> Готово: {{ count_completed }}</a>
+  </div>
+  {% endif %}
+
+  <!-- Timeline -->
+  {% if tasks %}
+  <div class="timeline">
+    {% for task in tasks %}
+    <div class="tl-hour">
+      <div class="tl-time">{{ task.scheduled_time|date:"H:i" }}</div>
+      <div class="tl-line">
+        <div class="tl-dot {{ task.status }}"></div>
+        {% if not forloop.last %}<div class="tl-vline"></div>{% endif %}
+      </div>
+      <div class="task-card {{ task.status }}">
+        <div class="tc-top">
+          <div>
+            <div class="tc-title">{{ task.title }}</div>
+            <div class="tc-animal">
+              {% if task.booking.animal.species == 'dog' %}<i class="fa-solid fa-dog"></i>
+              {% elif task.booking.animal.species == 'cat' %}<i class="fa-solid fa-cat"></i>
+              {% else %}<i class="fa-solid fa-paw"></i>{% endif %}
+              {{ task.booking.animal.name }}
+            </div>
+          </div>
+          <span class="sbadge {{ task.status }}">{{ task.get_status_display }}</span>
+        </div>
+
+        <div class="tc-meta">
+          <span><i class="fa-solid fa-door-open"></i> {{ task.booking.room.name }}</span>
+          <span><i class="fa-solid fa-user"></i> {{ task.booking.client.full_name }}</span>
+          {% if task.start_time %}
+          <span><i class="fa-regular fa-clock"></i> Начато {{ task.start_time|date:"H:i" }}{% if task.end_time %} → {{ task.end_time|date:"H:i" }}{% endif %}</span>
+          {% endif %}
+        </div>
+
+        {% with services=task.booking.booking_services.all %}
+        {% if services %}
+        <div class="tc-services">
+          <i class="fa-solid fa-star"></i>
+          {% for bs in services %}<span class="svc-tag">{{ bs.service.name }}</span>{% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        {% if task.booking.animal.special_needs %}
+        <div class="tc-alert">
+          <i class="fa-solid fa-triangle-exclamation"></i> <strong>Особые отметки:</strong> {{ task.booking.animal.special_needs }}
+        </div>
+        {% endif %}
+
+        {% if task.instructions %}
+        <div class="tc-note"><i class="fa-solid fa-circle-info" style="color:var(--primary);"></i> {{ task.instructions }}</div>
+        {% endif %}
+
+        {% if task.notes %}
+        <div class="tc-note"><i class="fa-regular fa-note-sticky"></i> {{ task.notes }}</div>
+        {% endif %}
+
+        <div class="tc-actions">
+          {% if task.status == 'pending' or task.status == 'in_progress' %}
+          <form method="post" action="{% url 'task_complete' task.pk %}" style="display:flex;gap:.5rem;flex-wrap:wrap;width:100%;">
+            {% csrf_token %}
+            <input type="hidden" name="date" value="{{ date_filter }}">
+            <input type="hidden" name="status_filter" value="{{ status_filter }}">
+            <input type="text" name="notes" class="note-input" placeholder="Заметка (необязательно)...">
+            <button type="submit" class="btn btn-success"><i class="fa-solid fa-check"></i> Выполнено</button>
+          </form>
+          {% else %}
+          <span style="font-size:.82rem;color:#16a34a;font-weight:600;"><i class="fa-solid fa-circle-check"></i> Выполнено</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="empty">
+    <div class="empty-icon"><i class="fa-solid fa-calendar-xmark"></i></div>
+    <h3>Задач нет</h3>
+    <p>На {{ date_filter }} задач не назначено</p>
+  </div>
+  {% endif %}
+
+</div>
+
+{% load static %}
+<script src="{% static 'js/main.js' %}"></script>
+<script>
+function shiftDate(delta) {
+  const inp = document.getElementById('dateInput');
+  const d = new Date(inp.value + 'T00:00:00');
+  d.setDate(d.getDate() + delta);
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+  inp.value = local.toISOString().slice(0, 10);
+  inp.form.submit();
+}
+function goToday() {
+  const inp = document.getElementById('dateInput');
+  const now = new Date();
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+  inp.value = local.toISOString().slice(0, 10);
+  inp.form.submit();
+}
+</script>
+</body>
+</html>

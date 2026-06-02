@@ -1,0 +1,114 @@
+{% extends 'base_admin.html' %}
+{% block title %}{{ title }} — ZooHotel{% endblock %}
+{% block topbar_title %}{{ title }}{% endblock %}
+{% block content %}
+<h1 class="page-title"><i class="fa-solid fa-house"></i> {{ title }}</h1>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start;">
+
+  <!-- Main form -->
+  <div class="card">
+    <div class="card-header"><i class="fa-solid fa-pen" style="color:var(--primary);"></i> Основная информация</div>
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-group">
+          <label class="form-label">{{ field.label }}{% if field.field.required %}<span class="req">*</span>{% endif %}</label>
+          {{ field }}
+          {% if field.name == 'image' and room.image %}
+          <div style="margin-top:.6rem;display:flex;align-items:center;gap:.75rem;">
+            <img src="{{ room.image.url }}" alt="Главное фото" style="height:80px;border-radius:8px;object-fit:cover;border:2px solid var(--border);">
+            <span style="font-size:.78rem;color:var(--muted);">Текущее главное фото.<br>Загрузите новое, чтобы заменить.</span>
+          </div>
+          {% endif %}
+          {% if field.errors %}<div class="invalid-feedback" style="display:block;">{{ field.errors.0 }}</div>{% endif %}
+        </div>
+        {% endfor %}
+        <div style="display:flex;gap:.75rem;margin-top:.5rem;">
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Сохранить</button>
+          <a href="{% url 'rooms_admin' %}" class="btn btn-secondary">Отмена</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Gallery -->
+  {% if room %}
+  <div>
+    <div class="card">
+      <div class="card-header"><i class="fa-solid fa-images" style="color:var(--primary);"></i> Галерея фотографий</div>
+      <div class="card-body">
+        <!-- Upload form -->
+        <form method="post" action="{% url 'room_image_upload' room.pk %}" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+          <div class="form-group">
+            <label class="form-label">Добавить фото</label>
+            {{ img_form.image }}
+          </div>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:.5rem;">
+            <div class="form-group" style="margin-bottom:0;">
+              {{ img_form.caption }}
+            </div>
+            <div class="form-group" style="margin-bottom:0;width:90px;">
+              {{ img_form.order }}
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm" style="margin-top:.75rem;width:100%;justify-content:center;">
+            <i class="fa-solid fa-upload"></i> Загрузить фото
+          </button>
+        </form>
+
+        <!-- Existing images -->
+        {% if images %}
+        <div style="margin-top:1.25rem;border-top:1px solid var(--border);padding-top:1.25rem;">
+          <div style="font-size:.8rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem;">Загруженные фото ({{ images|length }})</div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem;">
+            {% for img in images %}
+            <div style="position:relative;border-radius:10px;overflow:hidden;border:1.5px solid var(--border);background:var(--bg);">
+              <img src="{{ img.image.url }}" alt="{{ img.caption }}" style="width:100%;height:110px;object-fit:cover;display:block;">
+              <div style="padding:.4rem .6rem;display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:.75rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100px;">
+                  {% if img.caption %}{{ img.caption }}{% else %}Фото #{{ img.pk }}{% endif %}
+                </span>
+                <form method="post" action="{% url 'room_image_delete' img.pk %}" style="margin:0;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-danger btn-sm" style="padding:.2rem .5rem;" onclick="return confirm('Удалить это фото?')">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% else %}
+        <div style="text-align:center;padding:1.5rem 0;color:var(--muted);font-size:.85rem;margin-top:1rem;border-top:1px solid var(--border);">
+          <i class="fa-regular fa-images" style="font-size:2rem;display:block;margin-bottom:.5rem;opacity:.4;"></i>
+          Фотографии ещё не загружены
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if room.image %}
+    <div class="card" style="margin-top:1rem;">
+      <div class="card-header"><i class="fa-solid fa-star" style="color:var(--accent);"></i> Главное фото</div>
+      <div class="card-body" style="padding:.9rem;">
+        <img src="{{ room.image.url }}" alt="{{ room.name }}" style="width:100%;border-radius:8px;object-fit:cover;max-height:160px;">
+        <div style="font-size:.75rem;color:var(--muted);margin-top:.4rem;">Отображается на карточке номера</div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="card">
+    <div class="card-body" style="text-align:center;padding:2rem;color:var(--muted);">
+      <i class="fa-solid fa-images" style="font-size:2rem;opacity:.3;display:block;margin-bottom:.75rem;"></i>
+      Сохраните номер, чтобы добавить фотографии галереи
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

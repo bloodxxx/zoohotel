@@ -1,0 +1,52 @@
+{% extends 'base_admin.html' %}
+{% block title %}Бронирования — ZooHotel{% endblock %}
+{% block topbar_title %}Бронирования{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h1 class="page-title" style="margin:0;"><i class="fa-solid fa-calendar-check"></i> Бронирования</h1>
+  <a href="{% url 'booking_create' %}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Новое</a>
+</div>
+
+<div class="table-card">
+  <div class="table-toolbar">
+    <form method="get" style="display:flex;gap:.5rem;flex-wrap:wrap;width:100%;">
+      <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Клиент или животное..." style="width:200px;">
+      <select name="status" class="form-select" style="width:160px;">
+        <option value="">Все статусы</option>
+        {% for val,label in status_choices %}
+        <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <input type="date" name="date_from" value="{{ date_from }}" class="form-control" style="width:145px;" title="Заезд от">
+      <input type="date" name="date_to" value="{{ date_to }}" class="form-control" style="width:145px;" title="Заезд до">
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-magnifying-glass"></i></button>
+      <a href="{% url 'bookings_admin' %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-xmark"></i></a>
+    </form>
+  </div>
+  <table>
+    <thead>
+      <tr><th>#</th><th>Животное</th><th>Клиент</th><th>Номер</th><th>Заезд</th><th>Выезд</th><th>Статус</th><th>Сумма</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for b in bookings %}
+      <tr>
+        <td><a href="{% url 'booking_detail' b.pk %}">#{{ b.pk }}</a></td>
+        <td>{{ b.animal.name }}</td>
+        <td>{{ b.client.full_name }}</td>
+        <td>{{ b.room.name }}</td>
+        <td>{{ b.check_in_date|date:"d.m.Y" }}</td>
+        <td>{{ b.check_out_date|date:"d.m.Y" }}</td>
+        <td><span class="status-badge badge-{{ b.status }}">{{ b.get_status_display }}</span></td>
+        <td>{{ b.total_price|floatformat:0 }} ₽</td>
+        <td>
+          <a href="{% url 'booking_detail' b.pk %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-eye"></i></a>
+          <a href="{% url 'booking_edit' b.pk %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-pen"></i></a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--muted);">Бронирований не найдено</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

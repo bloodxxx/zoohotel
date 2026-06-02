@@ -1,0 +1,75 @@
+{% extends 'base_admin.html' %}
+{% block title %}{{ title }} — ZooHotel{% endblock %}
+{% block topbar_title %}{{ title }}{% endblock %}
+{% block content %}
+<h1 class="page-title"><i class="fa-solid fa-calendar-plus"></i> {{ title }}</h1>
+<div class="card" style="max-width:680px;">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        {% for field in form %}
+          {% if field.name != 'services' %}
+          <div class="form-group {% if field.name in 'notes' %}col-span-2{% endif %}" style="{% if field.name in 'notes,status' %}grid-column:1/-1;{% endif %}">
+            <label class="form-label">{{ field.label }}{% if field.field.required %}<span class="req">*</span>{% endif %}</label>
+            {{ field }}
+            {% if field.errors %}<div class="invalid-feedback" style="display:block;">{{ field.errors.0 }}</div>{% endif %}
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% for field in form %}{% if field.name == 'services' %}
+      <div class="form-group mt-2">
+        <label class="form-label">Услуги</label>
+        <div style="border:1px solid var(--border);border-radius:6px;padding:.75rem;columns:2;max-height:220px;overflow-y:auto;">
+          {% for svc in form.fields.services.queryset %}
+          <div class="form-check">
+            <input type="checkbox" name="services" value="{{ svc.pk }}" id="svc_{{ svc.pk }}"
+              {% if selected_service_ids and svc.pk in selected_service_ids %}checked{% endif %}>
+            <label for="svc_{{ svc.pk }}">{{ svc.name }} — {{ svc.price|floatformat:0 }} ₽</label>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}{% endfor %}
+      <div style="display:flex;gap:.75rem;margin-top:1rem;">
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Сохранить</button>
+        {% if booking %}
+        <a href="{% url 'booking_detail' booking.pk %}" class="btn btn-secondary">Отмена</a>
+        {% else %}
+        <a href="{% url 'bookings_admin' %}" class="btn btn-secondary">Отмена</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const clientSel = document.getElementById('id_client');
+const animalSel = document.getElementById('id_animal');
+const currentAnimalId = '{{ booking.animal_id|default:"" }}';
+
+function loadAnimals(clientId, selectId) {
+  if (!clientId) return;
+  fetch(`/api/client-animals/?client_id=${clientId}`)
+    .then(r => r.json())
+    .then(data => {
+      const current = selectId || animalSel.value;
+      animalSel.innerHTML = '<option value="">---------</option>';
+      data.animals.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a.id;
+        opt.textContent = a.name;
+        if (String(a.id) === String(current)) opt.selected = true;
+        animalSel.appendChild(opt);
+      });
+    });
+}
+
+if (clientSel) {
+  clientSel.addEventListener('change', () => loadAnimals(clientSel.value, null));
+  if (clientSel.value) loadAnimals(clientSel.value, currentAnimalId);
+}
+</script>
+{% endblock %}
