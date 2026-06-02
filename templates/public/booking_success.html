@@ -27,18 +27,28 @@
         <div style="display:flex;justify-content:space-between;margin-bottom:.4rem;"><span style="color:var(--muted);">Заезд</span><span>{{ booking.check_in_date|date:"d.m.Y" }}</span></div>
         <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">К оплате</span><strong style="color:var(--primary);">{{ payment.amount|floatformat:0 }} ₽</strong></div>
       </div>
-      <form method="post">
-        {% csrf_token %}
-        {% for value, label in payment_methods %}
-        <label style="display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:.5rem;cursor:pointer;background:#fff;">
-          <input type="radio" name="payment_method" value="{{ value }}" {% if forloop.first %}checked{% endif %}>
-          <span>{{ label }}</span>
-        </label>
-        {% endfor %}
-        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:.75rem;">
-          <i class="fa-solid fa-check"></i> Подтвердить способ оплаты
-        </button>
-      </form>
+      {% if payment %}
+      <a href="{% url 'booking_pay_online' payment.pk %}" class="btn btn-primary" style="width:100%;justify-content:center;font-size:1rem;padding:.85rem;margin-bottom:1rem;">
+        <i class="fa-solid fa-credit-card"></i> Оплатить онлайн через ЮKassa
+      </a>
+      <p style="text-align:center;font-size:.8rem;color:var(--muted);margin-bottom:1rem;">Банковская карта, ЮMoney и другие способы</p>
+      {% endif %}
+
+      <details>
+        <summary style="cursor:pointer;font-size:.85rem;color:var(--muted);text-align:center;margin-bottom:.75rem;">Оплатить при заезде</summary>
+        <form method="post">
+          {% csrf_token %}
+          {% for value, label in payment_methods %}
+          <label style="display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:.5rem;cursor:pointer;background:#fff;">
+            <input type="radio" name="payment_method" value="{{ value }}" {% if forloop.first %}checked{% endif %}>
+            <span>{{ label }}</span>
+          </label>
+          {% endfor %}
+          <button type="submit" class="btn btn-secondary" style="width:100%;justify-content:center;margin-top:.75rem;">
+            <i class="fa-solid fa-check"></i> Подтвердить
+          </button>
+        </form>
+      </details>
       <div style="text-align:center;margin-top:1rem;">
         <a href="{% url 'home' %}" style="color:var(--muted);font-size:.85rem;">Пропустить, выбрать позже</a>
       </div>

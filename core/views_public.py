@@ -144,6 +144,80 @@ def booking_success(request):
     })
 
 
+def booking_pay_online(request, payment_pk):
+    """Инициирует онлайн-оплату через ЮKassa для гостевого бронирования."""
+    import uuid
+    from yookassa import Configuration, Payment as YooPayment
+    from django.conf import settings
+    from django.urls import reverse
+
+    payment = get_object_or_404(Payment, pk=payment_pk, status__in=['unpaid', 'pending'])
+    booking = payment.booking
+
+    Configuration.account_id = settings.YOOKASSA_SHOP_ID
+    Configuration.secret_key = settings.YOOKASSA_SECRET_KEY
+
+    return_url = request.build_absolute_uri(
+        reverse('booking_payment_return') + f'?payment_id={payment.pk}'
+    )
+
+    yoo_payment = YooPayment.create({
+        'amount': {
+            'value': f'{payment.amount:.2f}',
+            'currency': 'RUB',
+        },
+        'confirmation': {
+            'type': 'redirect',
+            'return_url': return_url,
+        },
+        'capture': True,
+        'description': f'Оплата бронирования #{booking.pk} — {booking.animal.name}',
+        'metadata': {
+            'payment_db_id': str(payment.pk),
+            'booking_id': str(booking.pk),
+        },
+    }, idempotency_key=str(uuid.uuid4()))
+
+    payment.yookassa_payment_id = yoo_payment.id
+    payment.payment_method = 'online'
+    payment.status = 'pending'
+    payment.save(update_fields=['yookassa_payment_id', 'payment_method', 'status'])
+
+    return redirect(yoo_payment.confirmation.confirmation_url)
+
+
+def booking_payment_return(request):
+    """Страница возврата после оплаты через ЮKassa (для гостевых бронирований)."""
+    from yookassa import Configuration, Payment as YooPayment
+    from django.conf import settings
+    from django.utils import timezone as tz
+
+    payment_pk = request.GET.get('payment_id')
+    payment = None
+    if payment_pk:
+        try:
+            payment = Payment.objects.select_related('booking__animal', 'booking__room').get(pk=payment_pk)
+            if payment.yookassa_payment_id and payment.status != 'paid':
+                Configuration.account_id = settings.YOOKASSA_SHOP_ID
+                Configuration.secret_key = settings.YOOKASSA_SECRET_KEY
+                try:
+                    yoo = YooPayment.find_one(payment.yookassa_payment_id)
+                    if yoo.status == 'succeeded':
+                        payment.status = 'paid'
+                        payment.payment_date = tz.now()
+                        payment.transaction_id = yoo.id
+                        payment.save(update_fields=['status', 'payment_date', 'transaction_id'])
+                    elif yoo.status == 'canceled':
+                        payment.status = 'failed'
+                        payment.save(update_fields=['status'])
+                except Exception:
+                    pass
+        except Payment.DoesNotExist:
+            pass
+
+    return render(request, 'public/booking_payment_return.html', {'payment': payment})
+
+
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('home')
