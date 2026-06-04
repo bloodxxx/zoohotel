@@ -43,8 +43,32 @@ python manage.py check_no_shows     # отметить незаехавших к
 Цепочка зависимостей: `CustomUser` → `Client` → `Animal` → `Booking` → `Payment` / `Task` / `BookingService`.
 
 - `Client` — отдельная модель от `CustomUser`, связана через `OneToOne` (`client_profile`). Гостевые бронирования создают `Client` без привязки к `CustomUser`.
-- `Booking.total_price` вычисляется при создании: `room.price_per_day × nights + sum(services)`.
-- `Payment` создаётся автоматически при создании `Booking`. Поле `yookassa_payment_id` хранит ID платежа в ЮKassa.
+- `Booking.total_price` вычисляется при создании: `room.price_per_day × nights + sum(services)`. Ежедневные услуги (`Service.is_daily=True`) умножаются на количество ночей.
+- `Payment` создаётся автоматически при создании `Booking` с `amount = total_price`. Поле `yookassa_payment_id` хранит ID платежа в ЮKassa. При инициации оплаты `payment.amount` всегда синхронизируется с `booking.total_price`.
+
+### Услуги (Service)
+
+Активные услуги (4 штуки):
+- **Спецпитание** — разовая
+- **Дополнительный выгул** — ежедневная (`is_daily=True`), тарифицируется × ночи
+- **Ветеринарный осмотр** — разовая
+- **Груминг стрижка** — разовая
+
+Поле `Service.is_daily` определяет тарификацию и генерацию задач: ежедневные → задача каждый день, разовые → одна задача.
+
+Неактивные (не показываются при бронировании): Стандартное кормление, Выгул (30 мин), Дополнительный уход, Груминг базовый.
+
+### Задачи (Task)
+
+Задачи генерируются автоматически при переводе брони в статус `confirmed` функцией `_generate_tasks` в `views_admin.py`.
+
+Базовые задачи на каждый день: 08:00 кормление, 10:00 уборка вольера, 13:00 кормление, 18:00 кормление.
+
+Поле `Task.period` ('morning'/'day'/'evening'/'night') выводится автоматически из `scheduled_time` в `Task.save()`. Названия типовых задач (кормление/прогулка/уборка/осмотр) согласуются с периодом суток автоматически — «Вечернее кормление», «Утренняя прогулка» и т.д. `bulk_create` обходит `save()`, поэтому в `_generate_tasks` период и название проставляются вручную перед вставкой.
+
+`Task.is_overdue` / `Task.overdue_label` — вычисляемые свойства, не пишут в БД.
+
+Фильтр «В работе» в разделе caretaker намеренно убран — только «Ожидает» и «Готово».
 
 ### Платежи (ЮKassa)
 
@@ -54,6 +78,15 @@ python manage.py check_no_shows     # отметить незаехавших к
 
 Вебхук от ЮKassa: `POST /payment/webhook/` — `@csrf_exempt`, обновляет `Payment.status`.
 После оплаты ЮKassa делает редирект на `/payment/return/` (клиент) или `/booking/payment/return/` (гость).
+
+### Личный кабинет клиента
+
+В списке бронирований (`cabinet/bookings/`) клиент видит все активности по брони:
+- Базовые задачи (кормление, уборка) — сгруппированы по названию с прогрессом `(2/5)`
+- Доп. услуги — статус и прогресс выполнения задач
+- Иконки: ⏰ ожидает / ⟳ выполняется / ✓ оказано
+
+При выборе вольера занятые (пересекающиеся по датам брони) отображаются с красным бейджем «Занято» и недоступны для выбора. Проверка через `api_available_rooms` → `Room.is_available_for()`.
 
 ### Логирование
 
@@ -66,9 +99,7 @@ python manage.py check_no_shows     # отметить незаехавших к
 ## Деплой (PythonAnywhere)
 
 ```bash
-git pull
-python manage.py migrate
-python manage.py collectstatic --noinput
+cd ~/zoohotel && git pull && python manage.py migrate && python manage.py collectstatic --noinput
 # затем Reload в Web App
 ```
 
