@@ -149,6 +149,18 @@
   .sbadge.in_progress { background: #dbeafe; color: #1e40af; }
   .sbadge.completed  { background: #d1fae5; color: #065f46; }
 
+  .sbadge.overdue {
+    background: #fee2e2;
+    color: #991b1b;
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+  }
+
+  /* Overdue task card */
+  .task-card.overdue { border-color: #fca5a5; background: #fff5f5; }
+  .tl-dot.overdue { background: #ef4444; }
+
   .tc-meta { display: flex; flex-wrap: wrap; gap: .6rem; font-size: .78rem; color: var(--muted); margin-bottom: .5rem; }
   .tc-meta span { display: flex; align-items: center; gap: .25rem; }
 
@@ -271,10 +283,10 @@
     <div class="tl-hour">
       <div class="tl-time">{{ task.scheduled_time|date:"H:i" }}</div>
       <div class="tl-line">
-        <div class="tl-dot {{ task.status }}"></div>
+        <div class="tl-dot {% if task.is_overdue %}overdue{% else %}{{ task.status }}{% endif %}"></div>
         {% if not forloop.last %}<div class="tl-vline"></div>{% endif %}
       </div>
-      <div class="task-card {{ task.status }}">
+      <div class="task-card {{ task.status }}{% if task.is_overdue %} overdue{% endif %}">
         <div class="tc-top">
           <div>
             <div class="tc-title">{{ task.title }}</div>
@@ -285,7 +297,12 @@
               {{ task.booking.animal.name }}
             </div>
           </div>
-          <span class="sbadge {{ task.status }}">{{ task.get_status_display }}</span>
+          <div style="display:flex;flex-direction:column;gap:.3rem;align-items:flex-end;">
+            <span class="sbadge {{ task.status }}">{{ task.get_status_display }}</span>
+            {% if task.is_overdue %}
+            <span class="sbadge overdue"><i class="fa-solid fa-triangle-exclamation"></i> Просрочено{% if task.overdue_label %} на {{ task.overdue_label }}{% endif %}</span>
+            {% endif %}
+          </div>
         </div>
 
         <div class="tc-meta">

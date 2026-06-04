@@ -246,6 +246,12 @@ def _generate_tasks(booking):
                 status='pending',
             ))
 
+    # bulk_create обходит Task.save(), поэтому период и согласованное
+    # с временем название проставляем вручную.
+    for t in tasks:
+        t.period = Task.period_for_hour(timezone.localtime(t.scheduled_time).hour)
+        t.title = t.synced_title()
+
     Task.objects.bulk_create(tasks)
 
 
@@ -479,7 +485,10 @@ def task_create(request):
     if request.method == 'POST':
         form = TaskForm(request.POST)
         if form.is_valid():
+            entered_title = form.cleaned_data.get('title', '')
             task = form.save()
+            if task.title != entered_title:
+                messages.info(request, f'Название согласовано с временем: «{task.title}».')
             messages.success(request, f'Задача #{task.pk} создана.')
             return redirect('tasks_admin')
     else:
@@ -493,7 +502,10 @@ def task_edit(request, pk):
     if request.method == 'POST':
         form = TaskForm(request.POST, instance=task)
         if form.is_valid():
-            form.save()
+            entered_title = form.cleaned_data.get('title', '')
+            task = form.save()
+            if task.title != entered_title:
+                messages.info(request, f'Название согласовано с временем: «{task.title}».')
             messages.success(request, 'Задача обновлена.')
             return redirect('tasks_admin')
     else:

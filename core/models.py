@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
 
 
 class CustomUser(AbstractUser):
@@ -258,6 +259,20 @@ class Task(models.Model):
         ('in_progress', 'Выполняется'),
         ('completed', 'Выполнено'),
     ]
+    PERIOD_CHOICES = [
+        ('morning', 'Утро'),
+        ('day', 'День'),
+        ('evening', 'Вечер'),
+        ('night', 'Ночь'),
+    ]
+    # Прилагательное периода в трёх родах: (мужской, женский, средний)
+    # утренн-ий/яя/ее, днев-ной/ная/ное, вечерн-ий/яя/ее, ноч-ной/ная/ное
+    PERIOD_ADJECTIVES = {
+        'morning': ('Утренний', 'Утренняя', 'Утреннее'),
+        'day': ('Дневной', 'Дневная', 'Дневное'),
+        'evening': ('Вечерний', 'Вечерняя', 'Вечернее'),
+        'night': ('Ночной', 'Ночная', 'Ночное'),
+    }
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='tasks', verbose_name='Бронирование')
     service = models.ForeignKey(
         Service, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Услуга'
@@ -269,6 +284,7 @@ class Task(models.Model):
     title = models.CharField('Название задачи', max_length=255)
     instructions = models.TextField('Инструкции', blank=True)
     scheduled_time = models.DateTimeField('Плановое время')
+    period = models.CharField('Период суток', max_length=10, choices=PERIOD_CHOICES, blank=True)
     status = models.CharField('Статус', max_length=20, choices=STATUS_CHOICES, default='pending')
     start_time = models.DateTimeField('Время начала', null=True, blank=True)
     end_time = models.DateTimeField('Время окончания', null=True, blank=True)
@@ -289,6 +305,77 @@ class Task(models.Model):
             'in_progress': 'status-primary',
             'completed': 'status-success',
         }.get(self.status, 'status-secondary')
+
+    @staticmethod
+    def period_for_hour(hour):
+        """Период суток по часу планового времени."""
+        if 5 <= hour < 12:
+            return 'morning'
+        if 12 <= hour < 17:
+            return 'day'
+        if 17 <= hour < 22:
+            return 'evening'
+        return 'night'
+
+    # Базовые названия, которые согласуются с периодом, и их род:
+    # 'f' — женский (прогулка, уборка), 'n' — средний (кормление), 'm' — мужской (осмотр)
+    SYNCABLE_TITLES = {
+        'кормление': ('кормление', 'n'),
+        'прогулка': ('прогулка', 'f'),
+        'уборка': ('уборка вольера', 'f'),
+        'осмотр': ('осмотр', 'm'),
+    }
+
+    def _detect_syncable(self):
+        """Если название содержит согласуемое ключевое слово, вернуть (базовое_название, род)."""
+        low = self.title.lower()
+        for keyword, (base, gender) in self.SYNCABLE_TITLES.items():
+            if keyword in low:
+                return base, gender
+        return None
+
+    def synced_title(self):
+        """Название, согласованное с периодом суток (или исходное, если согласовать нельзя)."""
+        detected = self._detect_syncable()
+        if not detected or not self.period:
+            return self.title
+        base, gender = detected
+        gender_index = {'m': 0, 'f': 1, 'n': 2}[gender]
+        adjective = self.PERIOD_ADJECTIVES[self.period][gender_index]
+        return f'{adjective} {base}'
+
+    def save(self, *args, **kwargs):
+        # Период всегда выводится из планового времени — единый источник правды.
+        if self.scheduled_time:
+            self.period = self.period_for_hour(timezone.localtime(self.scheduled_time).hour)
+        # Согласуем название с периодом для типовых задач (кормление/прогулка/уборка/осмотр).
+        self.title = self.synced_title()
+        super().save(*args, **kwargs)
+
+    @property
+    def is_overdue(self):
+        """Задача просрочена: плановое время прошло, а она ещё не выполнена."""
+        if self.status == 'completed':
+            return False
+        return self.scheduled_time < timezone.now()
+
+    @property
+    def overdue_label(self):
+        """Человекочитаемая длительность просрочки, напр. '4 ч 20 мин'."""
+        if not self.is_overdue:
+            return ''
+        delta = timezone.now() - self.scheduled_time
+        total_minutes = int(delta.total_seconds() // 60)
+        days, rem = divmod(total_minutes, 1440)
+        hours, minutes = divmod(rem, 60)
+        parts = []
+        if days:
+            parts.append(f'{days} дн')
+        if hours:
+            parts.append(f'{hours} ч')
+        if minutes and not days:
+            parts.append(f'{minutes} мин')
+        return ' '.join(parts) or 'только что'
 
 
 class Payment(models.Model):
