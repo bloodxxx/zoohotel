@@ -271,7 +271,6 @@
   <div class="stats-bar">
     <a href="?date={{ date_filter }}" class="stat-chip chip-all {% if not status_filter %}active{% endif %}"><i class="fa-solid fa-list-check"></i> Всего: {{ count_pending|add:count_in_progress|add:count_completed }}</a>
     <a href="?date={{ date_filter }}&status=pending" class="stat-chip chip-wait {% if status_filter == 'pending' %}active{% endif %}"><i class="fa-solid fa-hourglass-half"></i> Ожидает: {{ count_pending }}</a>
-    <a href="?date={{ date_filter }}&status=in_progress" class="stat-chip chip-active {% if status_filter == 'in_progress' %}active{% endif %}"><i class="fa-solid fa-spinner"></i> В работе: {{ count_in_progress }}</a>
     <a href="?date={{ date_filter }}&status=completed" class="stat-chip chip-done {% if status_filter == 'completed' %}active{% endif %}"><i class="fa-solid fa-circle-check"></i> Готово: {{ count_completed }}</a>
   </div>
   {% endif %}

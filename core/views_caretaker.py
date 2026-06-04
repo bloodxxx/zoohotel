@@ -30,7 +30,7 @@ def caretaker_tasks(request):
         'in_progress': tasks.filter(status='in_progress').count(),
         'completed': tasks.filter(status='completed').count(),
     }
-    if status_filter in ('pending', 'in_progress', 'completed'):
+    if status_filter in ('pending', 'completed'):
         tasks = tasks.filter(status=status_filter)
 
     return render(request, 'caretaker/tasks.html', {
