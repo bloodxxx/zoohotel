@@ -42,8 +42,14 @@
           <span class="label"><i class="fa-solid fa-list-check"></i> Услуги</span>
           <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.2rem;">
             {% for svc in booking.svc_statuses %}
-            <span style="font-size:.75rem;padding:.15rem .5rem;border-radius:12px;{% if svc.status == 'completed' %}background:#d1fae5;color:#065f46;{% elif svc.status == 'in_progress' %}background:#dbeafe;color:#1e40af;{% else %}background:#fef3c7;color:#92400e;{% endif %}">
-              {{ svc.name }}{% if svc.status == 'completed' %} ✓{% elif svc.status == 'in_progress' %} …{% endif %}
+            <span style="font-size:.75rem;padding:.15rem .5rem;border-radius:12px;display:inline-flex;align-items:center;gap:.25rem;{% if svc.status == 'completed' %}background:#d1fae5;color:#065f46;{% elif svc.status == 'in_progress' %}background:#dbeafe;color:#1e40af;{% else %}background:#fef3c7;color:#92400e;{% endif %}">
+              {% if svc.status == 'completed' %}<i class="fa-solid fa-check" style="font-size:.65rem;"></i>
+              {% elif svc.status == 'in_progress' %}<i class="fa-solid fa-spinner fa-spin" style="font-size:.65rem;"></i>
+              {% else %}<i class="fa-regular fa-clock" style="font-size:.65rem;"></i>{% endif %}
+              {{ svc.name }}
+              {% if svc.is_daily and svc.total > 0 %}
+                <span style="opacity:.75;">({{ svc.done }}/{{ svc.total }})</span>
+              {% endif %}
             </span>
             {% endfor %}
           </div>

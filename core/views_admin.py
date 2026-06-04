@@ -108,10 +108,12 @@ def booking_create(request):
             co = booking.check_out_date
             nights = max((co - ci).days, 1)
             svc_list = form.cleaned_data.get('services', [])
-            booking.total_price = booking.room.price_per_day * nights + sum(s.price for s in svc_list)
+            svc_cost = sum(s.price * nights if s.is_daily else s.price for s in svc_list)
+            booking.total_price = booking.room.price_per_day * nights + svc_cost
             booking.save()
             for svc in svc_list:
-                BookingService.objects.create(booking=booking, service=svc, quantity=1, price=svc.price)
+                qty = nights if svc.is_daily else 1
+                BookingService.objects.create(booking=booking, service=svc, quantity=qty, price=svc.price)
             Payment.objects.create(
                 booking=booking, client=booking.client,
                 amount=booking.room.price_per_day,
@@ -134,11 +136,13 @@ def booking_edit(request, pk):
             b = form.save(commit=False)
             nights = max((b.check_out_date - b.check_in_date).days, 1)
             svc_list = form.cleaned_data.get('services', [])
-            b.total_price = b.room.price_per_day * nights + sum(s.price for s in svc_list)
+            svc_cost = sum(s.price * nights if s.is_daily else s.price for s in svc_list)
+            b.total_price = b.room.price_per_day * nights + svc_cost
             b.save()
             BookingService.objects.filter(booking=booking).delete()
             for svc in svc_list:
-                BookingService.objects.create(booking=booking, service=svc, quantity=1, price=svc.price)
+                qty = nights if svc.is_daily else 1
+                BookingService.objects.create(booking=booking, service=svc, quantity=qty, price=svc.price)
             log_action(request, 'Изменено бронирование', 'Booking', booking.pk)
             messages.success(request, 'Бронирование обновлено.')
             return redirect('booking_detail', pk=pk)
@@ -211,12 +215,9 @@ def _generate_tasks(booking):
                 ))
         day += datetime.timedelta(days=1)
 
-    # Доп. услуги: выгул — каждый день, остальные (груминг и т.д.) — 1 раз
+    # Доп. услуги: ежедневные (is_daily) — задача каждый день, разовые — 1 раз
     for bs in booking.booking_services.select_related('service').all():
-        svc_name_lower = bs.service.name.lower()
-        is_daily = 'выгул' in svc_name_lower or 'walk' in svc_name_lower
-
-        if is_daily:
+        if bs.service.is_daily:
             day = ci.replace(hour=0, minute=0, second=0, microsecond=0)
             while day < co:
                 scheduled = day.replace(hour=11, minute=0, second=0, microsecond=0)

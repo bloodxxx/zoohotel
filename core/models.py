@@ -180,6 +180,7 @@ class Service(models.Model):
     category = models.CharField('Категория', max_length=100)
     price = models.DecimalField('Стоимость', max_digits=10, decimal_places=2)
     unit = models.CharField('Единица измерения', max_length=50)
+    is_daily = models.BooleanField('Начисляется за каждую ночь', default=False)
     status = models.CharField('Статус', max_length=20, choices=STATUS_CHOICES, default='active')
     created_at = models.DateTimeField(auto_now_add=True)
 

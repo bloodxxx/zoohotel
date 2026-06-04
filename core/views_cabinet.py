@@ -108,15 +108,29 @@ def cabinet_bookings(request):
 
     # Attach service task statuses to each booking
     for b in all_bookings:
-        task_by_svc = {}
+        tasks_by_svc = {}
         for t in b.tasks.all():
             if t.service_id:
-                task_by_svc[t.service_id] = t.status
+                tasks_by_svc.setdefault(t.service_id, []).append(t.status)
         svc_statuses = []
-        for bs in b.booking_services.all():
+        for bs in b.booking_services.select_related('service').all():
+            statuses = tasks_by_svc.get(bs.service_id, [])
+            total = len(statuses)
+            done = statuses.count('completed')
+            if total == 0:
+                overall = 'pending'
+            elif done == total:
+                overall = 'completed'
+            elif done > 0 or 'in_progress' in statuses:
+                overall = 'in_progress'
+            else:
+                overall = 'pending'
             svc_statuses.append({
                 'name': bs.service.name,
-                'status': task_by_svc.get(bs.service_id, 'pending'),
+                'status': overall,
+                'is_daily': bs.service.is_daily,
+                'done': done,
+                'total': total,
             })
         b.svc_statuses = svc_statuses
 
@@ -155,7 +169,8 @@ def cabinet_new_booking(request):
             co = cd['check_out_date']
             nights = max((co - ci).days, 1)
             svc_list = cd.get('services', [])
-            total = room.price_per_day * nights + sum(s.price for s in svc_list)
+            svc_cost = sum(s.price * nights if s.is_daily else s.price for s in svc_list)
+            total = room.price_per_day * nights + svc_cost
             booking = Booking.objects.create(
                 client=client, animal=cd['animal'], room=room,
                 check_in_date=ci, check_out_date=co,
@@ -164,7 +179,8 @@ def cabinet_new_booking(request):
                 created_by=request.user,
             )
             for svc in svc_list:
-                BookingService.objects.create(booking=booking, service=svc, quantity=1, price=svc.price)
+                qty = nights if svc.is_daily else 1
+                BookingService.objects.create(booking=booking, service=svc, quantity=qty, price=svc.price)
             Payment.objects.create(
                 booking=booking, client=client,
                 amount=room.price_per_day,
@@ -200,7 +216,8 @@ def cabinet_rebook(request, pk):
             co = cd['check_out_date']
             nights = max((co - ci).days, 1)
             svc_list = cd.get('services', [])
-            total = room.price_per_day * nights + sum(s.price for s in svc_list)
+            svc_cost = sum(s.price * nights if s.is_daily else s.price for s in svc_list)
+            total = room.price_per_day * nights + svc_cost
             booking = Booking.objects.create(
                 client=client, animal=cd['animal'], room=room,
                 check_in_date=ci, check_out_date=co,
@@ -209,7 +226,8 @@ def cabinet_rebook(request, pk):
                 created_by=request.user,
             )
             for svc in svc_list:
-                BookingService.objects.create(booking=booking, service=svc, quantity=1, price=svc.price)
+                qty = nights if svc.is_daily else 1
+                BookingService.objects.create(booking=booking, service=svc, quantity=qty, price=svc.price)
             Payment.objects.create(
                 booking=booking, client=client,
                 amount=room.price_per_day,

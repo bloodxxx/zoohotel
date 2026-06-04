@@ -194,12 +194,13 @@
             <label>
               <input type="checkbox" name="services" value="{{ svc.pk }}"
                 class="svc-check-input svc-check" id="csvc_{{ svc.pk }}" data-price="{{ svc.price }}"
+                data-daily="{{ svc.is_daily|yesno:'1,0' }}"
                 {% if svc.pk in rebook_service_ids %}checked{% endif %}>
               <div class="svc-card">
                 <div class="svc-dot"></div>
                 <div>
                   <div class="svc-card-name">{{ svc.name }}</div>
-                  <div class="svc-card-price">{{ svc.price|floatformat:0 }} ₽ / {{ svc.unit }}</div>
+                  <div class="svc-card-price">{{ svc.price|floatformat:0 }} ₽ / {% if svc.is_daily %}ночь{% else %}{{ svc.unit }}{% endif %}</div>
                 </div>
               </div>
             </label>
@@ -295,9 +296,16 @@ function calcPrice() {
   let svcTotal = 0, svcLines = [];
   document.querySelectorAll('.svc-check:checked').forEach(cb => {
     const p = parseFloat(cb.dataset.price || 0);
-    svcTotal += p;
+    const isDaily = cb.dataset.daily === '1';
+    const cost = isDaily ? p * nights : p;
+    svcTotal += cost;
     const nm = cb.closest('label').querySelector('.svc-card-name');
-    if (nm) svcLines.push(nm.textContent + ': ' + p.toLocaleString('ru-RU') + ' ₽');
+    if (nm) {
+      const label = isDaily
+        ? nm.textContent + ': ' + p.toLocaleString('ru-RU') + ' ₽ × ' + nights + ' ' + word + ' = ' + cost.toLocaleString('ru-RU') + ' ₽'
+        : nm.textContent + ': ' + cost.toLocaleString('ru-RU') + ' ₽';
+      svcLines.push(label);
+    }
   });
 
   priceEl.textContent = (roomCost + svcTotal).toLocaleString('ru-RU') + ' ₽';
