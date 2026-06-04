@@ -347,6 +347,7 @@ document.querySelectorAll('.room-type-radio').forEach(r => {
     document.querySelectorAll('.room-type-btn').forEach(b => b.classList.remove('active'));
     r.nextElementSibling.classList.add('active');
     filterRoomsByType();
+    checkRoomAvailability();
   });
 });
 
@@ -364,10 +365,26 @@ function checkRoomAvailability() {
     const availIds = new Set(data.rooms.map(r => String(r.id)));
     document.querySelectorAll('.room-label').forEach(lbl => {
       const inp = lbl.querySelector('input[name="room"]');
+      const card = lbl.querySelector('.room-select-card');
       const unavail = !availIds.has(String(inp.value));
-      lbl.style.opacity = unavail ? '0.4' : '1';
-      lbl.style.pointerEvents = unavail ? 'none' : '';
-      if (unavail && inp.checked) { inp.checked = false; calcPrice(); }
+      // Удалить старый бейдж
+      const oldBadge = card.querySelector('.room-busy-badge');
+      if (oldBadge) oldBadge.remove();
+      if (unavail) {
+        inp.disabled = true;
+        card.style.opacity = '0.55';
+        card.style.cursor = 'not-allowed';
+        const badge = document.createElement('div');
+        badge.className = 'room-busy-badge';
+        badge.innerHTML = '<i class="fa-solid fa-lock"></i> Занято';
+        badge.style.cssText = 'position:absolute;top:.4rem;left:.4rem;background:#ef4444;color:#fff;font-size:.65rem;font-weight:700;padding:.15rem .45rem;border-radius:4px;';
+        card.appendChild(badge);
+        if (inp.checked) { inp.checked = false; calcPrice(); }
+      } else {
+        inp.disabled = false;
+        card.style.opacity = '1';
+        card.style.cursor = '';
+      }
     });
     checkNoRooms();
   }).catch(() => {});

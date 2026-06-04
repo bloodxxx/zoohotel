@@ -106,12 +106,17 @@ def cabinet_bookings(request):
         from datetime import date as dt
         all_bookings = [b for b in all_bookings if b.check_in_date.date() <= dt.fromisoformat(date_to)]
 
-    # Attach service task statuses to each booking
+    # Attach all task statuses to each booking for cabinet display
     for b in all_bookings:
         tasks_by_svc = {}
+        base_tasks = []
         for t in b.tasks.all():
             if t.service_id:
                 tasks_by_svc.setdefault(t.service_id, []).append(t.status)
+            else:
+                base_tasks.append(t)
+
+        # Доп. услуги с прогрессом
         svc_statuses = []
         for bs in b.booking_services.select_related('service').all():
             statuses = tasks_by_svc.get(bs.service_id, [])
@@ -131,7 +136,34 @@ def cabinet_bookings(request):
                 'is_daily': bs.service.is_daily,
                 'done': done,
                 'total': total,
+                'is_service': True,
             })
+
+        # Базовые задачи (кормление, уборка) — группируем по названию
+        base_grouped = {}
+        for t in base_tasks:
+            key = t.title
+            base_grouped.setdefault(key, []).append(t.status)
+        for title, statuses in base_grouped.items():
+            total = len(statuses)
+            done = statuses.count('completed')
+            if total == 0:
+                overall = 'pending'
+            elif done == total:
+                overall = 'completed'
+            elif done > 0 or 'in_progress' in statuses:
+                overall = 'in_progress'
+            else:
+                overall = 'pending'
+            svc_statuses.append({
+                'name': title,
+                'status': overall,
+                'is_daily': True,
+                'done': done,
+                'total': total,
+                'is_service': False,
+            })
+
         b.svc_statuses = svc_statuses
 
     active = [b for b in all_bookings if b.status in ('pending', 'confirmed')]
@@ -183,12 +215,11 @@ def cabinet_new_booking(request):
                 BookingService.objects.create(booking=booking, service=svc, quantity=qty, price=svc.price)
             Payment.objects.create(
                 booking=booking, client=client,
-                amount=room.price_per_day,
+                amount=total,
                 payment_method='', status='unpaid',
             )
             log_action(request, 'Создано бронирование', 'Booking', booking.pk)
-            prepay = int(room.price_per_day)
-            messages.success(request, f'Бронирование #{booking.pk} создано. Предоплата: {prepay} ₽ (1 сутки).')
+            messages.success(request, f'Бронирование #{booking.pk} создано. К оплате: {int(total)} ₽.')
             return redirect('cabinet_bookings')
         else:
             messages.error(request, 'Исправьте ошибки в форме.')
@@ -230,7 +261,7 @@ def cabinet_rebook(request, pk):
                 BookingService.objects.create(booking=booking, service=svc, quantity=qty, price=svc.price)
             Payment.objects.create(
                 booking=booking, client=client,
-                amount=room.price_per_day,
+                amount=total,
                 payment_method='', status='unpaid',
             )
             log_action(request, f'Повторное бронирование на основе #{pk}', 'Booking', booking.pk)
