@@ -369,6 +369,11 @@ def cabinet_pay_yookassa(request, booking_pk):
         messages.info(request, 'Нет активного платежа для этого бронирования.')
         return redirect('cabinet_bookings')
 
+    # Всегда синхронизируем сумму платежа с актуальной стоимостью бронирования
+    if payment.amount != booking.total_price:
+        payment.amount = booking.total_price
+        payment.save(update_fields=['amount'])
+
     Configuration.account_id = settings.YOOKASSA_SHOP_ID
     Configuration.secret_key = settings.YOOKASSA_SECRET_KEY
 

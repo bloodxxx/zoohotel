@@ -154,6 +154,10 @@ def booking_pay_online(request, payment_pk):
     payment = get_object_or_404(Payment, pk=payment_pk, status__in=['unpaid', 'pending'])
     booking = payment.booking
 
+    if payment.amount != booking.total_price:
+        payment.amount = booking.total_price
+        payment.save(update_fields=['amount'])
+
     Configuration.account_id = settings.YOOKASSA_SHOP_ID
     Configuration.secret_key = settings.YOOKASSA_SECRET_KEY
 
