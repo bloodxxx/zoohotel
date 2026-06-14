@@ -281,6 +281,14 @@ def payment_mark_paid(request, pk):
         payment.save(update_fields=['payment_method', 'status', 'payment_date'])
         log_action(request, f'Платёж #{pk} отмечен оплаченным', 'Payment', pk)
         messages.success(request, f'Платёж #{pk} отмечен как оплаченный.')
+        # Авто-подтверждение бронирования при оплате на месте
+        booking = payment.booking
+        if booking.status == 'pending':
+            booking.status = 'confirmed'
+            booking.save(update_fields=['status'])
+            log_action(request, f'Бронирование #{booking.pk} подтверждено автоматически после оплаты', 'Booking', booking.pk)
+            _generate_tasks(booking)
+            messages.success(request, f'Бронирование #{booking.pk} автоматически подтверждено.')
     return redirect('booking_detail', pk=payment.booking_id)
 
 

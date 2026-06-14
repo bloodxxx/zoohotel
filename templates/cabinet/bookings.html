@@ -56,17 +56,17 @@
         </div>
         {% endif %}
       </div>
-      <div>
-        <a href="{% url 'cabinet_rebook' booking.pk %}" class="btn btn-outline btn-sm"><i class="fa-solid fa-rotate-right"></i> Повторить</a>
+      <div style="display:flex;flex-direction:column;gap:.4rem;align-items:flex-end;">
         {% with payment=booking.payments.first %}
           {% if payment and payment.status == 'paid' %}
-          <span class="btn btn-sm" style="margin-top:.4rem;background:#d1fae5;color:#065f46;cursor:default;"><i class="fa-solid fa-check"></i> Оплачено</span>
+          <span class="btn btn-sm" style="background:#d1fae5;color:#065f46;cursor:default;"><i class="fa-solid fa-check"></i> Оплачено</span>
           {% elif payment and payment.status != 'refunded' and booking.status != 'cancelled' %}
-          <a href="{% url 'cabinet_pay_yookassa' booking.pk %}" class="btn btn-primary btn-sm" style="margin-top:.4rem;"><i class="fa-solid fa-credit-card"></i> Оплатить онлайн</a>
+          <a href="{% url 'cabinet_pay' booking.pk %}" class="btn btn-outline btn-sm"><i class="fa-solid fa-money-bill"></i> Оплатить на месте</a>
+          <a href="{% url 'cabinet_pay_yookassa' booking.pk %}" class="btn btn-primary btn-sm"><i class="fa-solid fa-credit-card"></i> Оплатить онлайн</a>
           {% endif %}
         {% endwith %}
         {% if booking.status == 'pending' or booking.status == 'confirmed' %}
-        <form method="post" action="{% url 'cabinet_booking_delete' booking.pk %}" style="display:inline;margin-top:.4rem;">
+        <form method="post" action="{% url 'cabinet_booking_delete' booking.pk %}" style="display:inline;">
           {% csrf_token %}
           <button type="submit" class="btn btn-danger btn-sm" data-confirm="Отменить бронирование #{{ booking.pk }}?"><i class="fa-solid fa-xmark"></i> Отменить</button>
         </form>

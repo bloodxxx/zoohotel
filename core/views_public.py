@@ -73,7 +73,7 @@ def booking_view(request):
             nights = max((co - ci).days, 1)
             room_cost = room.price_per_day * nights
             services_sel = cd.get('services', [])
-            svc_cost = sum(s.price for s in services_sel)
+            svc_cost = sum(s.price * nights if s.is_daily else s.price for s in services_sel)
             total = room_cost + svc_cost
             booking = Booking.objects.create(
                 client=client, animal=animal, room=room,
@@ -82,7 +82,8 @@ def booking_view(request):
                 created_by=request.user if request.user.is_authenticated else None,
             )
             for svc in services_sel:
-                BookingService.objects.create(booking=booking, service=svc, quantity=1, price=svc.price)
+                qty = nights if svc.is_daily else 1
+                BookingService.objects.create(booking=booking, service=svc, quantity=qty, price=svc.price)
             Payment.objects.create(
                 booking=booking,
                 client=client,
@@ -211,6 +212,12 @@ def booking_payment_return(request):
                         payment.payment_date = tz.now()
                         payment.transaction_id = yoo.id
                         payment.save(update_fields=['status', 'payment_date', 'transaction_id'])
+                        booking = payment.booking
+                        if booking.status == 'pending':
+                            from .views_admin import _generate_tasks
+                            booking.status = 'confirmed'
+                            booking.save(update_fields=['status'])
+                            _generate_tasks(booking)
                     elif yoo.status == 'canceled':
                         payment.status = 'failed'
                         payment.save(update_fields=['status'])

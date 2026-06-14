@@ -219,12 +219,13 @@
                 <label>
                   <input type="checkbox" name="services" value="{{ svc.pk }}" class="svc-check-input svc-check"
                     id="svc_{{ svc.pk }}" data-price="{{ svc.price }}"
+                    data-daily="{{ svc.is_daily|yesno:'1,0' }}"
                     {% if svc.pk|stringformat:'s' in form.services.value|default:'' %}checked{% endif %}>
                   <div class="svc-card">
                     <div class="svc-card-dot"></div>
                     <div>
                       <div class="svc-card-name">{{ svc.name }}</div>
-                      <div class="svc-card-price">{{ svc.price|floatformat:0 }} ₽ / {{ svc.unit }}</div>
+                      <div class="svc-card-price">{{ svc.price|floatformat:0 }} ₽ / {% if svc.is_daily %}ночь{% else %}{{ svc.unit }}{% endif %}</div>
                     </div>
                   </div>
                 </label>
@@ -273,6 +274,7 @@ const ciPicker = flatpickr('#id_check_in_date', {
   altFormat: 'j F Y, H:i',
   minDate: 'today',
   time_24hr: true,
+  defaultHour: 14, defaultMinute: 0,
   onChange: function(dates) {
     if (dates[0]) {
       coPicker.set('minDate', dates[0]);
@@ -288,6 +290,7 @@ const coPicker = flatpickr('#id_check_out_date', {
   altFormat: 'j F Y, H:i',
   minDate: 'today',
   time_24hr: true,
+  defaultHour: 12, defaultMinute: 0,
   onChange: calcPrice
 });
 
@@ -322,9 +325,17 @@ function calcPrice() {
   let svcLines = [];
   document.querySelectorAll('.svc-check:checked').forEach(cb => {
     const p = parseFloat(cb.dataset.price || 0);
-    svcTotal += p;
+    const isDaily = cb.dataset.daily === '1';
+    const cost = isDaily ? p * nights : p;
+    svcTotal += cost;
     const label = cb.closest('label').querySelector('.svc-card-name');
-    if (label) svcLines.push(label.textContent + ': ' + p.toLocaleString('ru-RU') + ' ₽');
+    if (label) {
+      const nm = label.textContent;
+      const line = isDaily
+        ? nm + ': ' + p.toLocaleString('ru-RU') + ' × ' + nights + ' ' + word + ' = ' + cost.toLocaleString('ru-RU') + ' ₽'
+        : nm + ': ' + cost.toLocaleString('ru-RU') + ' ₽';
+      svcLines.push(line);
+    }
   });
 
   const total = roomCost + svcTotal;

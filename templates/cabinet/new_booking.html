@@ -255,6 +255,7 @@ const ciPicker = flatpickr('#id_check_in_date', {
   enableTime: true, dateFormat: 'Y-m-d H:i',
   altInput: true, altFormat: 'j F Y, H:i',
   minDate: 'today', time_24hr: true,
+  defaultHour: 14, defaultMinute: 0,
   defaultDate: '{{ rebook_ci|default:"" }}',
   onChange: function(dates) {
     if (dates[0]) coPicker.set('minDate', dates[0]);
@@ -266,6 +267,7 @@ const coPicker = flatpickr('#id_check_out_date', {
   enableTime: true, dateFormat: 'Y-m-d H:i',
   altInput: true, altFormat: 'j F Y, H:i',
   minDate: 'today', time_24hr: true,
+  defaultHour: 12, defaultMinute: 0,
   defaultDate: '{{ rebook_co|default:"" }}',
   onChange: calcPrice
 });

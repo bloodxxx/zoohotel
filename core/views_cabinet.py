@@ -303,14 +303,34 @@ PAYMENT_METHODS = [
 
 @client_required
 def cabinet_booking_delete(request, pk):
+    import datetime
     client = get_client(request)
     booking = get_object_or_404(Booking, pk=pk, client=client)
     if request.method == 'POST':
         if booking.status in ('pending', 'confirmed'):
+            paid_payment = booking.payments.filter(status='paid').first()
+            check_in_today = booking.check_in_date.date() == tz.localtime(tz.now()).date()
+
             booking.status = 'cancelled'
             booking.save(update_fields=['status'])
             log_action(request, f'Клиент отменил бронирование #{pk}', 'Booking', pk)
-            messages.success(request, f'Бронирование #{pk} отменено.')
+
+            if paid_payment:
+                if check_in_today:
+                    penalty = booking.room.price_per_day
+                    messages.warning(
+                        request,
+                        f'Бронирование #{pk} отменено. Так как заезд был запланирован на сегодня, '
+                        f'удерживается стоимость 1 суток ({int(penalty)} ₽). '
+                        f'Остаток будет возвращён в течение 30 дней.'
+                    )
+                else:
+                    messages.warning(
+                        request,
+                        f'Бронирование #{pk} отменено. Возврат средств будет произведён в течение 30 дней.'
+                    )
+            else:
+                messages.success(request, f'Бронирование #{pk} отменено.')
         else:
             messages.error(request, 'Невозможно отменить бронирование с текущим статусом.')
     return redirect('cabinet_bookings')
@@ -429,6 +449,13 @@ def yookassa_webhook(request):
                 payment.payment_date = tz.now()
                 payment.transaction_id = yoo_obj.id
                 payment.save(update_fields=['status', 'payment_date', 'transaction_id'])
+                # Авто-подтверждение бронирования при успешной онлайн-оплате
+                booking = payment.booking
+                if booking.status == 'pending':
+                    from .views_admin import _generate_tasks
+                    booking.status = 'confirmed'
+                    booking.save(update_fields=['status'])
+                    _generate_tasks(booking)
             elif notification.event == WebhookNotificationEventType.PAYMENT_CANCELED:
                 payment.status = 'failed'
                 payment.save(update_fields=['status'])
@@ -459,6 +486,12 @@ def payment_return(request):
                     payment.payment_date = tz.now()
                     payment.transaction_id = yoo_payment.id
                     payment.save(update_fields=['status', 'payment_date', 'transaction_id'])
+                    booking = payment.booking
+                    if booking.status == 'pending':
+                        from .views_admin import _generate_tasks
+                        booking.status = 'confirmed'
+                        booking.save(update_fields=['status'])
+                        _generate_tasks(booking)
                 elif yoo_payment.status == 'canceled':
                     payment.status = 'failed'
                     payment.save(update_fields=['status'])
