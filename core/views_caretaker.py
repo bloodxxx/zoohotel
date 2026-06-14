@@ -74,6 +74,14 @@ def task_complete(request, pk):
             task.notes = notes
         task.save(update_fields=['status', 'end_time', 'notes'])
         messages.success(request, 'Задача выполнена.')
+        # Автозавершение брони когда все задачи выполнены
+        booking = task.booking
+        if booking.status == 'confirmed':
+            all_done = not booking.tasks.exclude(status='completed').exists()
+            if all_done:
+                booking.status = 'completed'
+                booking.save(update_fields=['status'])
+                messages.info(request, f'Бронирование #{booking.pk} автоматически завершено — все задачи выполнены.')
     url = redirect('caretaker_tasks').url
     params = []
     if date_param: params.append(f'date={date_param}')

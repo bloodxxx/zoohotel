@@ -54,7 +54,7 @@
         {% elif images %}
         <img src="{{ images.0.image.url }}" alt="{{ room.name }}">
         {% else %}
-        {% if room.type == 'economy' %}<i class="fa-solid fa-house-chimney"></i>
+        {% if room.type == 'aviary' %}<i class="fa-solid fa-house-chimney"></i>
         {% elif room.type == 'standard' %}<i class="fa-solid fa-house-chimney-window"></i>
         {% else %}<i class="fa-solid fa-star"></i>{% endif %}
         {% endif %}
@@ -95,7 +95,7 @@
         <div class="card-header"><span style="font-weight:700;"><i class="fa-solid fa-circle-check" style="color:var(--success);"></i> Включено в стоимость</span></div>
         <div class="card-body">
           <div class="included-grid">
-            {% if room.type == 'economy' %}
+            {% if room.type == 'aviary' %}
             <div class="included-item"><i class="fa-solid fa-bowl-food"></i><span>Кормление 2 раза в день</span></div>
             <div class="included-item"><i class="fa-solid fa-person-walking"></i><span>Выгул 1 раз в день</span></div>
             <div class="included-item"><i class="fa-solid fa-broom"></i><span>Ежедневная уборка</span></div>

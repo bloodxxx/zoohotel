@@ -18,7 +18,7 @@ def rooms_list(request):
     rooms = Room.objects.exclude(status='maintenance')
     from itertools import groupby
     type_labels = dict(Room.TYPE_CHOICES)
-    type_order = ['economy', 'standard', 'lux']
+    type_order = ['aviary', 'standard', 'lux']
     grouped = []
     for t in type_order:
         group = [r for r in rooms if r.type == t]
@@ -43,14 +43,31 @@ def booking_view(request):
     if request.user.is_authenticated and hasattr(request.user, 'client_profile'):
         return redirect('cabinet_new_booking')
 
-    rooms = Room.objects.filter(status='available')
     services = Service.objects.filter(status='active')
+    room_types = [
+        {'type': 'aviary', 'label': 'Вольер', 'count': Room.objects.filter(type='aviary', status='available').count()},
+        {'type': 'standard', 'label': 'Стандарт', 'count': Room.objects.filter(type='standard', status='available').count()},
+        {'type': 'lux', 'label': 'Люкс', 'count': Room.objects.filter(type='lux', status='available').count()},
+    ]
 
     if request.method == 'POST':
         form = GuestBookingForm(request.POST)
         if form.is_valid():
             cd = form.cleaned_data
-            # find or create client
+            ci = cd['check_in_date']
+            co = cd['check_out_date']
+            room_type = cd['room_type']
+            room = None
+            rooms_qs = Room.objects.filter(type=room_type, status='available').order_by('name')
+            for r in rooms_qs:
+                if r.is_available_for(ci, co):
+                    room = r
+                    break
+            if not room:
+                form.add_error('room_type', 'Нет свободных номеров выбранного класса на указанные даты.')
+                return render(request, 'public/booking.html', {
+                    'form': form, 'services': services, 'room_types': room_types,
+                })
             client, _ = Client.objects.get_or_create(
                 email=cd['email'],
                 defaults={'full_name': cd['full_name'], 'phone': cd['phone']}
@@ -59,7 +76,6 @@ def booking_view(request):
                 client.full_name = cd['full_name']
                 client.phone = cd['phone']
                 client.save()
-            # create animal
             animal = Animal.objects.create(
                 client=client,
                 name=cd['animal_name'],
@@ -67,14 +83,10 @@ def booking_view(request):
                 breed=cd['animal_breed'],
                 special_needs=cd.get('special_needs', ''),
             )
-            room = cd['room']
-            ci = cd['check_in_date']
-            co = cd['check_out_date']
             nights = max((co - ci).days, 1)
-            room_cost = room.price_per_day * nights
             services_sel = cd.get('services', [])
             svc_cost = sum(s.price * nights if s.is_daily else s.price for s in services_sel)
-            total = room_cost + svc_cost
+            total = room.price_per_day * nights + svc_cost
             booking = Booking.objects.create(
                 client=client, animal=animal, room=room,
                 check_in_date=ci, check_out_date=co,
@@ -85,11 +97,8 @@ def booking_view(request):
                 qty = nights if svc.is_daily else 1
                 BookingService.objects.create(booking=booking, service=svc, quantity=qty, price=svc.price)
             Payment.objects.create(
-                booking=booking,
-                client=client,
-                amount=total,
-                payment_method='',
-                status='unpaid',
+                booking=booking, client=client,
+                amount=total, payment_method='', status='unpaid',
             )
             log_action(request, 'Создано бронирование', 'Booking', booking.pk)
             request.session['last_booking_pk'] = booking.pk
@@ -100,12 +109,8 @@ def booking_view(request):
     else:
         form = GuestBookingForm()
 
-    selected_room_id = request.GET.get('room', '')
     return render(request, 'public/booking.html', {
-        'form': form,
-        'rooms': rooms,
-        'services': services,
-        'selected_room_id': selected_room_id,
+        'form': form, 'services': services, 'room_types': room_types,
     })
 
 

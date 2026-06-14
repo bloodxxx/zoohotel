@@ -179,6 +179,15 @@ def cabinet_bookings(request):
     })
 
 
+def _find_free_room(room_type, ci, co, exclude_booking_id=None):
+    """Возвращает первый свободный номер выбранного класса или None."""
+    rooms = Room.objects.filter(type=room_type, status='available').order_by('name')
+    for room in rooms:
+        if room.is_available_for(ci, co, exclude_booking_id=exclude_booking_id):
+            return room
+    return None
+
+
 @client_required
 def cabinet_new_booking(request):
     client = get_client(request)
@@ -189,45 +198,53 @@ def cabinet_new_booking(request):
         messages.warning(request, 'Сначала добавьте животное в личном кабинете.')
         return redirect('cabinet_animal_add')
 
-    rooms = Room.objects.filter(status='available')
     services = Service.objects.filter(status='active')
+    room_types = [
+        {'type': 'aviary', 'label': 'Вольер', 'count': Room.objects.filter(type='aviary', status='available').count()},
+        {'type': 'standard', 'label': 'Стандарт', 'count': Room.objects.filter(type='standard', status='available').count()},
+        {'type': 'lux', 'label': 'Люкс', 'count': Room.objects.filter(type='lux', status='available').count()},
+    ]
 
     if request.method == 'POST':
         form = ClientBookingForm(client, request.POST)
         if form.is_valid():
             cd = form.cleaned_data
-            room = cd['room']
             ci = cd['check_in_date']
             co = cd['check_out_date']
-            nights = max((co - ci).days, 1)
-            svc_list = cd.get('services', [])
-            svc_cost = sum(s.price * nights if s.is_daily else s.price for s in svc_list)
-            total = room.price_per_day * nights + svc_cost
-            booking = Booking.objects.create(
-                client=client, animal=cd['animal'], room=room,
-                check_in_date=ci, check_out_date=co,
-                status='pending', total_price=total,
-                notes=cd.get('notes', ''),
-                created_by=request.user,
-            )
-            for svc in svc_list:
-                qty = nights if svc.is_daily else 1
-                BookingService.objects.create(booking=booking, service=svc, quantity=qty, price=svc.price)
-            Payment.objects.create(
-                booking=booking, client=client,
-                amount=total,
-                payment_method='', status='unpaid',
-            )
-            log_action(request, 'Создано бронирование', 'Booking', booking.pk)
-            messages.success(request, f'Бронирование #{booking.pk} создано. К оплате: {int(total)} ₽.')
-            return redirect('cabinet_bookings')
-        else:
+            room_type = cd['room_type']
+            room = _find_free_room(room_type, ci, co)
+            if not room:
+                form.add_error('room_type', 'Нет свободных номеров выбранного класса на указанные даты.')
+            else:
+                nights = max((co - ci).days, 1)
+                svc_list = cd.get('services', [])
+                svc_cost = sum(s.price * nights if s.is_daily else s.price for s in svc_list)
+                total = room.price_per_day * nights + svc_cost
+                booking = Booking.objects.create(
+                    client=client, animal=cd['animal'], room=room,
+                    check_in_date=ci, check_out_date=co,
+                    status='pending', total_price=total,
+                    notes=cd.get('notes', ''),
+                    created_by=request.user,
+                )
+                for svc in svc_list:
+                    qty = nights if svc.is_daily else 1
+                    BookingService.objects.create(booking=booking, service=svc, quantity=qty, price=svc.price)
+                Payment.objects.create(
+                    booking=booking, client=client,
+                    amount=total,
+                    payment_method='', status='unpaid',
+                )
+                log_action(request, 'Создано бронирование', 'Booking', booking.pk)
+                messages.success(request, f'Бронирование #{booking.pk} создано — {room.name}. К оплате: {int(total)} ₽.')
+                return redirect('cabinet_bookings')
+        if not form.is_valid() or form.errors:
             messages.error(request, 'Исправьте ошибки в форме.')
     else:
         form = ClientBookingForm(client)
 
     return render(request, 'cabinet/new_booking.html', {
-        'form': form, 'rooms': rooms, 'services': services,
+        'form': form, 'services': services, 'room_types': room_types,
     })
 
 
@@ -238,39 +255,48 @@ def cabinet_rebook(request, pk):
     from django.utils import timezone as tz
     import datetime
 
+    services = Service.objects.filter(status='active')
+    room_types = [
+        {'type': 'aviary', 'label': 'Вольер', 'count': Room.objects.filter(type='aviary', status='available').count()},
+        {'type': 'standard', 'label': 'Стандарт', 'count': Room.objects.filter(type='standard', status='available').count()},
+        {'type': 'lux', 'label': 'Люкс', 'count': Room.objects.filter(type='lux', status='available').count()},
+    ]
+
     if request.method == 'POST':
         form = ClientBookingForm(client, request.POST)
         if form.is_valid():
             cd = form.cleaned_data
-            room = cd['room']
             ci = cd['check_in_date']
             co = cd['check_out_date']
-            nights = max((co - ci).days, 1)
-            svc_list = cd.get('services', [])
-            svc_cost = sum(s.price * nights if s.is_daily else s.price for s in svc_list)
-            total = room.price_per_day * nights + svc_cost
-            booking = Booking.objects.create(
-                client=client, animal=cd['animal'], room=room,
-                check_in_date=ci, check_out_date=co,
-                status='pending', total_price=total,
-                notes=cd.get('notes', ''),
-                created_by=request.user,
-            )
-            for svc in svc_list:
-                qty = nights if svc.is_daily else 1
-                BookingService.objects.create(booking=booking, service=svc, quantity=qty, price=svc.price)
-            Payment.objects.create(
-                booking=booking, client=client,
-                amount=total,
-                payment_method='', status='unpaid',
-            )
-            log_action(request, f'Повторное бронирование на основе #{pk}', 'Booking', booking.pk)
-            messages.success(request, f'Бронирование #{booking.pk} создано. Статус: Ожидание.')
-            return redirect('cabinet_bookings')
-        rooms = Room.objects.filter(status='available')
-        services = Service.objects.filter(status='active')
+            room_type = cd['room_type']
+            room = _find_free_room(room_type, ci, co)
+            if not room:
+                form.add_error('room_type', 'Нет свободных номеров выбранного класса на указанные даты.')
+            else:
+                nights = max((co - ci).days, 1)
+                svc_list = cd.get('services', [])
+                svc_cost = sum(s.price * nights if s.is_daily else s.price for s in svc_list)
+                total = room.price_per_day * nights + svc_cost
+                booking = Booking.objects.create(
+                    client=client, animal=cd['animal'], room=room,
+                    check_in_date=ci, check_out_date=co,
+                    status='pending', total_price=total,
+                    notes=cd.get('notes', ''),
+                    created_by=request.user,
+                )
+                for svc in svc_list:
+                    qty = nights if svc.is_daily else 1
+                    BookingService.objects.create(booking=booking, service=svc, quantity=qty, price=svc.price)
+                Payment.objects.create(
+                    booking=booking, client=client,
+                    amount=total,
+                    payment_method='', status='unpaid',
+                )
+                log_action(request, f'Повторное бронирование на основе #{pk}', 'Booking', booking.pk)
+                messages.success(request, f'Бронирование #{booking.pk} создано. Статус: Ожидание.')
+                return redirect('cabinet_bookings')
         return render(request, 'cabinet/new_booking.html', {
-            'form': form, 'rooms': rooms, 'services': services, 'rebook': True,
+            'form': form, 'services': services, 'room_types': room_types, 'rebook': True,
         })
 
     service_ids = list(original.booking_services.values_list('service_id', flat=True))
@@ -278,20 +304,17 @@ def cabinet_rebook(request, pk):
     co = (tz.now() + datetime.timedelta(days=original.nights())).strftime('%Y-%m-%d %H:%M')
     initial = {
         'animal': original.animal,
-        'room': original.room,
+        'room_type': original.room.type,
         'check_in_date': ci,
         'check_out_date': co,
         'services': service_ids,
         'notes': original.notes,
     }
     form = ClientBookingForm(client, initial=initial)
-    rooms = Room.objects.filter(status='available')
-    services = Service.objects.filter(status='active')
     return render(request, 'cabinet/new_booking.html', {
-        'form': form, 'rooms': rooms, 'services': services, 'rebook': True,
+        'form': form, 'services': services, 'room_types': room_types, 'rebook': True,
         'rebook_service_ids': service_ids,
         'rebook_ci': ci, 'rebook_co': co,
-        'rebook_room_id': original.room_id,
     })
 
 
@@ -354,27 +377,29 @@ def api_available_rooms(request):
     room_type = request.GET.get('type', '')
     check_in = request.GET.get('check_in', '')
     check_out = request.GET.get('check_out', '')
-    exclude_booking = request.GET.get('exclude', None)
 
     rooms = Room.objects.filter(status='available')
     if room_type:
         rooms = rooms.filter(type=room_type)
 
-    result = []
-    for room in rooms:
-        available = True
-        if check_in and check_out:
-            try:
-                from django.utils.dateparse import parse_datetime
-                ci = parse_datetime(check_in)
-                co = parse_datetime(check_out)
-                if ci and co:
-                    available = room.is_available_for(ci, co, exclude_booking_id=int(exclude_booking) if exclude_booking else None)
-            except Exception:
-                pass
-        if available:
-            result.append({'id': room.pk, 'name': room.name, 'type': room.get_type_display(), 'price': str(room.price_per_day)})
-    return JsonResponse({'rooms': result})
+    ci = co = None
+    if check_in and check_out:
+        from django.utils.dateparse import parse_datetime
+        ci = parse_datetime(check_in)
+        co = parse_datetime(check_out)
+
+    if ci and co and ci < co:
+        free_room = None
+        for room in rooms:
+            if room.is_available_for(ci, co):
+                free_room = room
+                break
+        if free_room:
+            return JsonResponse({'available': True, 'room_name': free_room.name, 'price': str(free_room.price_per_day)})
+        return JsonResponse({'available': False})
+
+    total = rooms.count()
+    return JsonResponse({'available': total > 0, 'total': total})
 
 
 @client_required

@@ -69,12 +69,17 @@ class Command(BaseCommand):
 
         self.stdout.write('Создание номеров...')
         rooms_data = [
-            {'name': 'Вольер №1', 'type': 'economy', 'description': 'Стандартный вольер для небольших животных. Площадь 4 кв.м.', 'price_per_day': 800},
-            {'name': 'Вольер №2', 'type': 'economy', 'description': 'Стандартный вольер для небольших животных. Площадь 4 кв.м.', 'price_per_day': 800},
-            {'name': 'Номер №1 Стандарт', 'type': 'standard', 'description': 'Просторный номер с мягкой подстилкой, игрушками и окном. Площадь 8 кв.м.', 'price_per_day': 1500},
-            {'name': 'Номер №2 Стандарт', 'type': 'standard', 'description': 'Просторный номер с мягкой подстилкой, игрушками и окном. Площадь 8 кв.м.', 'price_per_day': 1500},
-            {'name': 'Люкс "Королевский"', 'type': 'lux', 'description': 'VIP-номер с видом на сад. Индивидуальный уход, премиум питание, ежедневный груминг. Площадь 16 кв.м.', 'price_per_day': 3500},
-            {'name': 'Вольер №3 (Обслуживание)', 'type': 'economy', 'description': 'На плановом обслуживании', 'price_per_day': 800, 'status': 'maintenance'},
+            {'name': 'Вольер №1', 'type': 'aviary', 'description': 'Стандартный вольер для небольших животных. Площадь 4 кв.м.', 'price_per_day': 800},
+            {'name': 'Вольер №2', 'type': 'aviary', 'description': 'Стандартный вольер для небольших животных. Площадь 4 кв.м.', 'price_per_day': 800},
+            {'name': 'Вольер №3', 'type': 'aviary', 'description': 'Стандартный вольер для небольших животных. Площадь 4 кв.м.', 'price_per_day': 800},
+            {'name': 'Вольер №4', 'type': 'aviary', 'description': 'Стандартный вольер для небольших животных. Площадь 4 кв.м.', 'price_per_day': 800},
+            {'name': 'Вольер №5', 'type': 'aviary', 'description': 'Стандартный вольер для небольших животных. Площадь 4 кв.м.', 'price_per_day': 800},
+            {'name': 'Стандарт №1', 'type': 'standard', 'description': 'Просторный номер с мягкой подстилкой, игрушками и окном. Площадь 8 кв.м.', 'price_per_day': 1500},
+            {'name': 'Стандарт №2', 'type': 'standard', 'description': 'Просторный номер с мягкой подстилкой, игрушками и окном. Площадь 8 кв.м.', 'price_per_day': 1500},
+            {'name': 'Стандарт №3', 'type': 'standard', 'description': 'Просторный номер с мягкой подстилкой, игрушками и окном. Площадь 8 кв.м.', 'price_per_day': 1500},
+            {'name': 'Стандарт №4', 'type': 'standard', 'description': 'Просторный номер с мягкой подстилкой, игрушками и окном. Площадь 8 кв.м.', 'price_per_day': 1500},
+            {'name': 'Люкс №1 "Королевский"', 'type': 'lux', 'description': 'VIP-номер с видом на сад. Индивидуальный уход, премиум питание, ежедневный груминг. Площадь 16 кв.м.', 'price_per_day': 3500},
+            {'name': 'Люкс №2 "Премиум"', 'type': 'lux', 'description': 'VIP-номер с зимним садом. Полный спа-уход и персональный смотритель. Площадь 20 кв.м.', 'price_per_day': 4500},
         ]
         rooms = []
         for rd in rooms_data:
@@ -100,13 +105,14 @@ class Command(BaseCommand):
 
         self.stdout.write('Создание бронирований...')
         now = timezone.now()
+        # rooms[0..4]=вольеры, rooms[5..8]=стандарт, rooms[9..10]=люкс
         bookings_data = [
-            {'client': clients[0], 'animal': animals[0], 'room': rooms[2], 'check_in': now - datetime.timedelta(days=3), 'check_out': now + datetime.timedelta(days=4), 'status': 'confirmed', 'svcs': [services[0], services[4]]},
+            {'client': clients[0], 'animal': animals[0], 'room': rooms[5], 'check_in': now - datetime.timedelta(days=3), 'check_out': now + datetime.timedelta(days=4), 'status': 'confirmed', 'svcs': [services[0], services[4]]},
             {'client': clients[0], 'animal': animals[1], 'room': rooms[0], 'check_in': now + datetime.timedelta(days=1), 'check_out': now + datetime.timedelta(days=5), 'status': 'pending', 'svcs': [services[2]]},
-            {'client': clients[1], 'animal': animals[2], 'room': rooms[3], 'check_in': now - datetime.timedelta(days=10), 'check_out': now - datetime.timedelta(days=5), 'status': 'completed', 'svcs': [services[0], services[5]]},
-            {'client': clients[1], 'animal': animals[3], 'room': rooms[4], 'check_in': now - datetime.timedelta(days=1), 'check_out': now + datetime.timedelta(days=6), 'status': 'confirmed', 'svcs': [services[1], services[2], services[6]]},
+            {'client': clients[1], 'animal': animals[2], 'room': rooms[6], 'check_in': now - datetime.timedelta(days=10), 'check_out': now - datetime.timedelta(days=5), 'status': 'completed', 'svcs': [services[0], services[5]]},
+            {'client': clients[1], 'animal': animals[3], 'room': rooms[9], 'check_in': now - datetime.timedelta(days=1), 'check_out': now + datetime.timedelta(days=6), 'status': 'confirmed', 'svcs': [services[1], services[2], services[6]]},
             {'client': clients[2], 'animal': animals[4], 'room': rooms[1], 'check_in': now + datetime.timedelta(days=3), 'check_out': now + datetime.timedelta(days=7), 'status': 'pending', 'svcs': []},
-            {'client': clients[0], 'animal': animals[0], 'room': rooms[2], 'check_in': now - datetime.timedelta(days=30), 'check_out': now - datetime.timedelta(days=25), 'status': 'completed', 'svcs': [services[0]]},
+            {'client': clients[0], 'animal': animals[0], 'room': rooms[5], 'check_in': now - datetime.timedelta(days=30), 'check_out': now - datetime.timedelta(days=25), 'status': 'completed', 'svcs': [services[0]]},
         ]
         bookings = []
         for i, bd in enumerate(bookings_data):

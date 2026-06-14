@@ -117,7 +117,7 @@ class AnimalDocument(models.Model):
 
 class Room(models.Model):
     TYPE_CHOICES = [
-        ('economy', 'Эконом'),
+        ('aviary', 'Вольер'),
         ('standard', 'Стандарт'),
         ('lux', 'Люкс'),
     ]

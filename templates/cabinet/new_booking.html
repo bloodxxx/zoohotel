@@ -123,58 +123,32 @@
       </div>
     </div>
 
-    <!-- Номер -->
+    <!-- Класс номера -->
     <div class="card mb-2">
-      <div class="card-header"><i class="fa-solid fa-house" style="color:var(--primary);"></i> Выберите номер</div>
+      <div class="card-header"><i class="fa-solid fa-house" style="color:var(--primary);"></i> Класс номера</div>
       <div class="card-body">
-        <!-- Шаг 1: тип -->
-        <div style="margin-bottom:1rem;">
-          <div style="font-size:.8rem;font-weight:600;color:var(--muted);margin-bottom:.5rem;">Тип номера</div>
-          <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
-            <label style="cursor:pointer;">
-              <input type="radio" name="room_type_sel" value="" class="room-type-radio" style="display:none;" checked>
-              <span class="room-type-btn active">Все</span>
-            </label>
-            <label style="cursor:pointer;">
-              <input type="radio" name="room_type_sel" value="economy" class="room-type-radio" style="display:none;">
-              <span class="room-type-btn">Эконом</span>
-            </label>
-            <label style="cursor:pointer;">
-              <input type="radio" name="room_type_sel" value="standard" class="room-type-radio" style="display:none;">
-              <span class="room-type-btn">Стандарт</span>
-            </label>
-            <label style="cursor:pointer;">
-              <input type="radio" name="room_type_sel" value="lux" class="room-type-radio" style="display:none;">
-              <span class="room-type-btn">Люкс</span>
-            </label>
-          </div>
-        </div>
-        {% if form.room.errors %}<div class="invalid-feedback" style="display:block;margin-bottom:.5rem;">{{ form.room.errors.0 }}</div>{% endif %}
-        <div id="rooms-loading" style="display:none;color:var(--muted);font-size:.85rem;"><i class="fa-solid fa-spinner fa-spin"></i> Загрузка...</div>
-        <div id="no-rooms-msg" style="display:none;color:var(--muted);font-size:.85rem;">Нет доступных номеров для выбранных дат и типа</div>
-        <div class="room-select-grid" id="room-select-grid">
-          {% for room in rooms %}
-          <label class="room-label" data-type="{{ room.type }}">
-            <input type="radio" name="room" value="{{ room.pk }}" class="room-radio"
-              data-price="{{ room.price_per_day }}"
-              {% if form.room.value == room.pk|stringformat:'s' %}checked{% endif %}>
+        {% if form.room_type.errors %}<div class="invalid-feedback" style="display:block;margin-bottom:.5rem;">{{ form.room_type.errors.0 }}</div>{% endif %}
+        <div class="room-select-grid" id="room-type-grid">
+          {% for rt in room_types %}
+          <label>
+            <input type="radio" name="room_type" value="{{ rt.type }}" class="room-radio"
+              data-type="{{ rt.type }}"
+              {% if form.room_type.value == rt.type or forloop.first and not form.room_type.value %}checked{% endif %}>
             <div class="room-select-card">
               <div class="room-card-check"><i class="fa-solid fa-check"></i></div>
               <div class="room-card-icon">
-                {% if room.type == 'economy' %}<i class="fa-solid fa-house-chimney"></i>
-                {% elif room.type == 'standard' %}<i class="fa-solid fa-house-chimney-window"></i>
+                {% if rt.type == 'aviary' %}<i class="fa-solid fa-house-chimney"></i>
+                {% elif rt.type == 'standard' %}<i class="fa-solid fa-house-chimney-window"></i>
                 {% else %}<i class="fa-solid fa-star"></i>{% endif %}
               </div>
-              <div class="room-card-name">{{ room.name }}</div>
-              <div class="room-card-type">{{ room.get_type_display }}</div>
-              {% if room.description %}<div style="font-size:.7rem;color:var(--muted);margin:.2rem 0 .3rem;line-height:1.4;">{{ room.description|truncatechars:60 }}</div>{% endif %}
-              <div class="room-card-price">{{ room.price_per_day|floatformat:0 }} ₽<span style="font-weight:400;font-size:.72rem;color:var(--muted);"> / сут.</span></div>
+              <div class="room-card-name">{{ rt.label }}</div>
+              <div class="room-card-type" style="color:var(--muted);font-size:.72rem;">{{ rt.count }} номер(ов)</div>
+              <div id="avail-{{ rt.type }}" style="font-size:.7rem;color:var(--muted);margin-top:.2rem;"></div>
             </div>
           </label>
-          {% empty %}
-          <p style="color:var(--muted);font-size:.88rem;grid-column:1/-1;">Нет доступных номеров</p>
           {% endfor %}
         </div>
+        <div id="no-rooms-msg" style="display:none;color:#ef4444;font-size:.85rem;margin-top:.5rem;">Нет свободных номеров выбранного класса на указанные даты</div>
       </div>
     </div>
 
@@ -200,7 +174,7 @@
                 <div class="svc-dot"></div>
                 <div>
                   <div class="svc-card-name">{{ svc.name }}</div>
-                  <div class="svc-card-price">{{ svc.price|floatformat:0 }} ₽ / {% if svc.is_daily %}ночь{% else %}{{ svc.unit }}{% endif %}</div>
+                  <div class="svc-card-price">{{ svc.price|floatformat:0 }} ₽ / {% if svc.is_daily %}сутки{% else %}{{ svc.unit }}{% endif %}</div>
                 </div>
               </div>
             </label>
@@ -260,6 +234,7 @@ const ciPicker = flatpickr('#id_check_in_date', {
   onChange: function(dates) {
     if (dates[0]) coPicker.set('minDate', dates[0]);
     calcPrice();
+    checkAvailability();
   }
 });
 
@@ -269,145 +244,92 @@ const coPicker = flatpickr('#id_check_out_date', {
   minDate: 'today', time_24hr: true,
   defaultHour: 12, defaultMinute: 0,
   defaultDate: '{{ rebook_co|default:"" }}',
-  onChange: calcPrice
+  onChange: function() { calcPrice(); checkAvailability(); }
 });
 
+const CLASS_PRICES = { 'aviary': 800, 'standard': 1500, 'lux': 3500 };
+
+function getSelectedType() {
+  var el = document.querySelector('input[name="room_type"]:checked');
+  return el ? el.value : '';
+}
+
+function nightWord(n) {
+  if (n % 10 === 1 && n % 100 !== 11) return 'сутки';
+  if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) return 'суток';
+  return 'суток';
+}
+
 function calcPrice() {
-  const roomInput = document.querySelector('input[name="room"]:checked');
-  const ci = ciPicker.selectedDates[0];
-  const co = coPicker.selectedDates[0];
-  const priceEl = document.getElementById('calc-price');
-  const detailEl = document.getElementById('calc-detail');
-  const nightsEl = document.getElementById('nights-display');
+  var roomType = getSelectedType();
+  var ci = ciPicker.selectedDates[0];
+  var co = coPicker.selectedDates[0];
+  var priceEl = document.getElementById('calc-price');
+  var detailEl = document.getElementById('calc-detail');
+  var nightsEl = document.getElementById('nights-display');
+
+  detailEl.textContent = '';
 
   if (!ci || !co || co <= ci) {
     if (nightsEl) nightsEl.textContent = '';
-    priceEl.textContent = roomInput ? 'Выберите даты' : 'Выберите номер и даты';
-    detailEl.textContent = '';
+    priceEl.textContent = roomType ? 'Выберите даты' : 'Выберите класс и даты';
     return;
   }
-  const nights = Math.max(Math.ceil((co - ci) / 86400000), 1);
-  const word = nights % 10 === 1 && nights % 100 !== 11 ? 'ночь' :
-               [2,3,4].includes(nights % 10) && ![12,13,14].includes(nights % 100) ? 'ночи' : 'ночей';
-  if (nightsEl) nightsEl.innerHTML = '<i class="fa-solid fa-moon" style="color:var(--primary);"></i> ' + nights + ' ' + word;
+  var nights = Math.max(Math.ceil((co - ci) / 86400000), 1);
+  var word = nightWord(nights);
+  if (nightsEl) nightsEl.textContent = nights + ' ' + word;
 
-  if (!roomInput) { priceEl.textContent = 'Выберите номер'; detailEl.textContent = ''; return; }
+  if (!roomType) { priceEl.textContent = 'Выберите класс'; return; }
 
-  const ppd = parseFloat(roomInput.dataset.price || 0);
-  const roomCost = ppd * nights;
-  let svcTotal = 0, svcLines = [];
-  document.querySelectorAll('.svc-check:checked').forEach(cb => {
-    const p = parseFloat(cb.dataset.price || 0);
-    const isDaily = cb.dataset.daily === '1';
-    const cost = isDaily ? p * nights : p;
+  var ppd = CLASS_PRICES[roomType] || 0;
+  var roomCost = ppd * nights;
+  var svcTotal = 0;
+
+  var roomLine = document.createElement('div');
+  roomLine.textContent = 'Номер (от): ' + roomCost.toLocaleString('ru-RU') + ' ₽ (' + nights + ' ' + word + ')';
+  detailEl.appendChild(roomLine);
+
+  document.querySelectorAll('.svc-check:checked').forEach(function(cb) {
+    var p = parseFloat(cb.dataset.price || 0);
+    var isDaily = cb.dataset.daily === '1';
+    var cost = isDaily ? p * nights : p;
     svcTotal += cost;
-    const nm = cb.closest('label').querySelector('.svc-card-name');
+    var nm = cb.closest('label').querySelector('.svc-card-name');
     if (nm) {
-      const label = isDaily
-        ? nm.textContent + ': ' + p.toLocaleString('ru-RU') + ' ₽ × ' + nights + ' ' + word + ' = ' + cost.toLocaleString('ru-RU') + ' ₽'
-        : nm.textContent + ': ' + cost.toLocaleString('ru-RU') + ' ₽';
-      svcLines.push(label);
+      var line = document.createElement('div');
+      var svcName = nm.textContent.trim();
+      line.textContent = isDaily
+        ? svcName + ': ' + p.toLocaleString('ru-RU') + ' ₽ × ' + nights + ' ' + word + ' = ' + cost.toLocaleString('ru-RU') + ' ₽'
+        : svcName + ': ' + cost.toLocaleString('ru-RU') + ' ₽';
+      detailEl.appendChild(line);
     }
   });
 
   priceEl.textContent = (roomCost + svcTotal).toLocaleString('ru-RU') + ' ₽';
-  let detail = 'Номер: ' + roomCost.toLocaleString('ru-RU') + ' ₽ (' + nights + ' ' + word + ')';
-  if (svcLines.length) detail += '<br>' + svcLines.join('<br>');
-  detailEl.innerHTML = detail;
 }
 
-document.querySelectorAll('input[name="room"]').forEach(r => r.addEventListener('change', calcPrice));
-document.querySelectorAll('.svc-check').forEach(cb => cb.addEventListener('change', calcPrice));
-calcPrice();
-
-// Фильтрация по типу номера
-function filterRoomsByType() {
-  const selType = document.querySelector('input[name="room_type_sel"]:checked')?.value || '';
-  document.querySelectorAll('.room-label').forEach(lbl => {
-    const t = lbl.dataset.type;
-    lbl.classList.toggle('hidden', selType !== '' && t !== selType);
-  });
-  // Снять выбор если скрытый
-  const checked = document.querySelector('input[name="room"]:checked');
-  if (checked) {
-    const lbl = checked.closest('.room-label');
-    if (lbl && lbl.classList.contains('hidden')) {
-      checked.checked = false;
-      calcPrice();
-    }
-  }
-  checkNoRooms();
+function fmtDate(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') +
+    'T' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
 }
 
-function checkNoRooms() {
-  const visible = document.querySelectorAll('.room-label:not(.hidden)');
-  document.getElementById('no-rooms-msg').style.display = visible.length === 0 ? 'block' : 'none';
-}
-
-document.querySelectorAll('.room-type-radio').forEach(r => {
-  r.addEventListener('change', () => {
-    document.querySelectorAll('.room-type-btn').forEach(b => b.classList.remove('active'));
-    r.nextElementSibling.classList.add('active');
-    filterRoomsByType();
-    checkRoomAvailability();
-  });
-});
-
-// Проверка занятости при изменении дат
-function checkRoomAvailability() {
-  const ci = ciPicker.selectedDates[0];
-  const co = coPicker.selectedDates[0];
+function checkAvailability() {
+  var ci = ciPicker.selectedDates[0];
+  var co = coPicker.selectedDates[0];
   if (!ci || !co || co <= ci) return;
-
-  const fmt = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + 'T' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
-  const selType = document.querySelector('input[name="room_type_sel"]:checked')?.value || '';
-  const url = `/api/available-rooms/?check_in=${fmt(ci)}&check_out=${fmt(co)}&type=${selType}`;
-
-  fetch(url).then(r => r.json()).then(data => {
-    const availIds = new Set(data.rooms.map(r => String(r.id)));
-    document.querySelectorAll('.room-label').forEach(lbl => {
-      const inp = lbl.querySelector('input[name="room"]');
-      const card = lbl.querySelector('.room-select-card');
-      const unavail = !availIds.has(String(inp.value));
-      // Удалить старый бейдж
-      const oldBadge = card.querySelector('.room-busy-badge');
-      if (oldBadge) oldBadge.remove();
-      if (unavail) {
-        inp.disabled = true;
-        card.style.opacity = '0.55';
-        card.style.cursor = 'not-allowed';
-        const badge = document.createElement('div');
-        badge.className = 'room-busy-badge';
-        badge.innerHTML = '<i class="fa-solid fa-lock"></i> Занято';
-        badge.style.cssText = 'position:absolute;top:.4rem;left:.4rem;background:#ef4444;color:#fff;font-size:.65rem;font-weight:700;padding:.15rem .45rem;border-radius:4px;';
-        card.appendChild(badge);
-        if (inp.checked) { inp.checked = false; calcPrice(); }
-      } else {
-        inp.disabled = false;
-        card.style.opacity = '1';
-        card.style.cursor = '';
-      }
-    });
-    checkNoRooms();
-  }).catch(() => {});
+  ['aviary', 'standard', 'lux'].forEach(function(t) {
+    var url = '/api/available-rooms/?check_in=' + fmtDate(ci) + '&check_out=' + fmtDate(co) + '&type=' + t;
+    fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+      var el = document.getElementById('avail-' + t);
+      if (!el) return;
+      el.textContent = data.available ? '' : 'Занято на эти даты';
+      el.style.color = data.available ? 'var(--success)' : '#ef4444';
+    }).catch(function() {});
+  });
 }
 
-ciPicker.config.onChange.push(checkRoomAvailability);
-coPicker.config.onChange.push(checkRoomAvailability);
-
-{% if rebook_room_id %}
-document.addEventListener('DOMContentLoaded', function() {
-  const roomInput = document.querySelector('input[name="room"][value="{{ rebook_room_id }}"]');
-  if (roomInput) {
-    roomInput.checked = true;
-    const roomType = roomInput.closest('.room-label')?.dataset.type;
-    if (roomType) {
-      const typeRadio = document.querySelector(`input[name="room_type_sel"][value="${roomType}"]`);
-      if (typeRadio) { typeRadio.checked = true; filterRoomsByType(); }
-    }
-    calcPrice();
-  }
-});
-{% endif %}
+document.querySelectorAll('input[name="room_type"]').forEach(function(r) { r.addEventListener('change', calcPrice); });
+document.querySelectorAll('.svc-check').forEach(function(cb) { cb.addEventListener('change', calcPrice); });
+calcPrice();
 </script>
 {% endblock %}

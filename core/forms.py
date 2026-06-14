@@ -130,6 +130,13 @@ class ServiceForm(forms.ModelForm):
         }
 
 
+ROOM_TYPE_CHOICES = [
+    ('aviary', 'Вольер'),
+    ('standard', 'Стандарт'),
+    ('lux', 'Люкс'),
+]
+
+
 class GuestBookingForm(forms.Form):
     full_name = forms.CharField(label="ФИО клиента", max_length=100, widget=forms.TextInput(attrs={"class": "form-control"}))
     phone = forms.CharField(label="Телефон", max_length=20, widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "+7 (xxx) xxx-xx-xx"}))
@@ -140,7 +147,7 @@ class GuestBookingForm(forms.Form):
     special_needs = forms.CharField(label="Особые отметки", required=False, widget=forms.Textarea(attrs={"class": "form-control", "rows": 2}))
     check_in_date = forms.DateTimeField(label="Дата и время заезда", widget=forms.DateTimeInput(attrs={"class": "form-control", "type": "datetime-local"}))
     check_out_date = forms.DateTimeField(label="Дата и время выезда", widget=forms.DateTimeInput(attrs={"class": "form-control", "type": "datetime-local"}))
-    room = forms.ModelChoiceField(label="Номер", queryset=Room.objects.filter(status="available"), widget=forms.Select(attrs={"class": "form-select", "id": "id_room"}))
+    room_type = forms.ChoiceField(label="Класс номера", choices=ROOM_TYPE_CHOICES, widget=forms.Select(attrs={"class": "form-select"}))
     services = forms.ModelMultipleChoiceField(label="Дополнительные услуги", queryset=Service.objects.filter(status="active"), required=False, widget=forms.CheckboxSelectMultiple())
 
     def clean(self):
@@ -159,7 +166,7 @@ class ClientBookingForm(forms.Form):
     animal = forms.ModelChoiceField(label="Животное", queryset=Animal.objects.none(), widget=forms.Select(attrs={"class": "form-select"}))
     check_in_date = forms.DateTimeField(label="Дата и время заезда", widget=forms.DateTimeInput(attrs={"class": "form-control", "type": "datetime-local"}))
     check_out_date = forms.DateTimeField(label="Дата и время выезда", widget=forms.DateTimeInput(attrs={"class": "form-control", "type": "datetime-local"}))
-    room = forms.ModelChoiceField(label="Номер", queryset=Room.objects.filter(status="available"), widget=forms.Select(attrs={"class": "form-select", "id": "id_room"}))
+    room_type = forms.ChoiceField(label="Класс номера", choices=ROOM_TYPE_CHOICES, widget=forms.Select(attrs={"class": "form-select"}))
     services = forms.ModelMultipleChoiceField(label="Дополнительные услуги", queryset=Service.objects.filter(status="active"), required=False, widget=forms.CheckboxSelectMultiple())
     notes = forms.CharField(label="Примечания", required=False, widget=forms.Textarea(attrs={"class": "form-control", "rows": 2}))
 
