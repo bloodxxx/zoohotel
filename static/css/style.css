@@ -712,14 +712,17 @@ footer {
 /* Burger button */
 .burger {
   display: none;
-  flex-direction: column;
-  gap: 5px;
   background: none;
-  border: none;
+  border: 1.5px solid var(--border);
   cursor: pointer;
-  padding: .4rem;
+  padding: .4rem .6rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  color: var(--text);
   z-index: 1001;
+  line-height: 1;
 }
+.burger:hover { background: var(--bg); }
 .burger span {
   display: block;
   width: 24px;
@@ -755,19 +758,21 @@ footer {
     display: none;
     position: fixed;
     top: 70px;
-    left: 0;
-    right: 0;
+    right: 1rem;
+    left: auto;
+    width: 220px;
     background: #fff;
     flex-direction: column;
-    padding: .75rem 1rem;
-    border-bottom: 1px solid var(--border);
-    box-shadow: 0 4px 12px rgba(0,0,0,.08);
+    padding: .5rem;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 24px rgba(0,0,0,.12);
     z-index: 999;
     gap: 0;
   }
   .nav-links.open { display: flex; }
-  .nav-links a { padding: .6rem 1rem; font-size: .9rem; }
-  .nav-links .btn-nav { margin: .35rem 0 0; border-radius: 8px; text-align: center; justify-content: center; }
+  .nav-links a { padding: .65rem 1rem; font-size: .9rem; border-radius: 8px; }
+  .nav-links .btn-nav { margin: .25rem 0 0; border-radius: 8px; text-align: center; justify-content: center; background: var(--primary-light); color: var(--primary) !important; box-shadow: none; }
 
   /* Таблицы — горизонтальный скролл */
   .table-card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
