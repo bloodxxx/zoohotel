@@ -111,8 +111,19 @@ class RoomImageForm(forms.ModelForm):
         widgets = {
             'image': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
             'caption': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Например: Вид из вольера'}),
-            'order': forms.NumberInput(attrs={'class': 'form-control', 'value': '0'}),
+            'order': forms.NumberInput(attrs={'class': 'form-control', 'value': '0', 'placeholder': '0'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['order'].required = False
+        self.fields['order'].initial = 0
+
+    def clean_order(self):
+        val = self.cleaned_data.get('order')
+        if val is None:
+            return 0
+        return val
 
 
 class ServiceForm(forms.ModelForm):

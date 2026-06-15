@@ -133,6 +133,7 @@
           <label>
             <input type="radio" name="room_type" value="{{ rt.type }}" class="room-radio"
               data-type="{{ rt.type }}"
+              data-price="{{ rt.min_price|default:0 }}"
               {% if form.room_type.value == rt.type or forloop.first and not form.room_type.value %}checked{% endif %}>
             <div class="room-select-card">
               <div class="room-card-check"><i class="fa-solid fa-check"></i></div>
@@ -142,7 +143,11 @@
                 {% else %}<i class="fa-solid fa-star"></i>{% endif %}
               </div>
               <div class="room-card-name">{{ rt.label }}</div>
-              <div class="room-card-type" style="color:var(--muted);font-size:.72rem;">{{ rt.count }} номер(ов)</div>
+              {% if rt.min_price %}
+              <div class="room-card-price">от {{ rt.min_price|floatformat:0 }} ₽/сут.</div>
+              {% endif %}
+              <div style="font-size:.7rem;color:var(--muted);margin:.2rem 0 .3rem;line-height:1.35;">{{ rt.description }}</div>
+              <div class="room-card-type" style="color:var(--muted);font-size:.7rem;">{{ rt.count }} номер(ов)</div>
               <div id="avail-{{ rt.type }}" style="font-size:.7rem;color:var(--muted);margin-top:.2rem;"></div>
             </div>
           </label>
@@ -247,11 +252,14 @@ const coPicker = flatpickr('#id_check_out_date', {
   onChange: function() { calcPrice(); checkAvailability(); }
 });
 
-const CLASS_PRICES = { 'aviary': 800, 'standard': 1500, 'lux': 3500 };
-
 function getSelectedType() {
   var el = document.querySelector('input[name="room_type"]:checked');
   return el ? el.value : '';
+}
+
+function getSelectedPrice() {
+  var el = document.querySelector('input[name="room_type"]:checked');
+  return el ? parseFloat(el.dataset.price || 0) : 0;
 }
 
 function nightWord(n) {
@@ -281,7 +289,7 @@ function calcPrice() {
 
   if (!roomType) { priceEl.textContent = 'Выберите класс'; return; }
 
-  var ppd = CLASS_PRICES[roomType] || 0;
+  var ppd = getSelectedPrice();
   var roomCost = ppd * nights;
   var svcTotal = 0;
 

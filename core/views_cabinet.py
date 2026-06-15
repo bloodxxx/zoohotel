@@ -179,6 +179,31 @@ def cabinet_bookings(request):
     })
 
 
+_ROOM_TYPE_DESCRIPTIONS = {
+    'aviary': 'Просторный вольер для активных питомцев. Ежедневный выгул, кормление и уборка.',
+    'standard': 'Комфортный номер с мягкой подстилкой. Усиленный уход и индивидуальное внимание.',
+    'lux': 'Премиум-номер с максимальным сервисом. Персональный куратор, видеонаблюдение и уход 24/7.',
+}
+
+
+def _get_room_types_info():
+    from django.db.models import Min
+    prices = {
+        row['type']: row['min_price']
+        for row in Room.objects.filter(status='available').values('type').annotate(min_price=Min('price_per_day'))
+    }
+    return [
+        {
+            'type': t,
+            'label': label,
+            'count': Room.objects.filter(type=t, status='available').count(),
+            'min_price': prices.get(t),
+            'description': _ROOM_TYPE_DESCRIPTIONS.get(t, ''),
+        }
+        for t, label in [('aviary', 'Вольер'), ('standard', 'Стандарт'), ('lux', 'Люкс')]
+    ]
+
+
 def _find_free_room(room_type, ci, co, exclude_booking_id=None):
     """Возвращает первый свободный номер выбранного класса или None."""
     rooms = Room.objects.filter(type=room_type, status='available').order_by('name')
@@ -199,11 +224,7 @@ def cabinet_new_booking(request):
         return redirect('cabinet_animal_add')
 
     services = Service.objects.filter(status='active')
-    room_types = [
-        {'type': 'aviary', 'label': 'Вольер', 'count': Room.objects.filter(type='aviary', status='available').count()},
-        {'type': 'standard', 'label': 'Стандарт', 'count': Room.objects.filter(type='standard', status='available').count()},
-        {'type': 'lux', 'label': 'Люкс', 'count': Room.objects.filter(type='lux', status='available').count()},
-    ]
+    room_types = _get_room_types_info()
 
     if request.method == 'POST':
         form = ClientBookingForm(client, request.POST)
@@ -256,11 +277,7 @@ def cabinet_rebook(request, pk):
     import datetime
 
     services = Service.objects.filter(status='active')
-    room_types = [
-        {'type': 'aviary', 'label': 'Вольер', 'count': Room.objects.filter(type='aviary', status='available').count()},
-        {'type': 'standard', 'label': 'Стандарт', 'count': Room.objects.filter(type='standard', status='available').count()},
-        {'type': 'lux', 'label': 'Люкс', 'count': Room.objects.filter(type='lux', status='available').count()},
-    ]
+    room_types = _get_room_types_info()
 
     if request.method == 'POST':
         form = ClientBookingForm(client, request.POST)
@@ -364,8 +381,8 @@ def cabinet_animal_delete(request, pk):
     client = get_client(request)
     animal = get_object_or_404(Animal, pk=pk, client=client)
     if request.method == 'POST':
-        if animal.bookings.exists():
-            messages.error(request, 'Нельзя удалить животное с историей бронирований.')
+        if animal.bookings.filter(status__in=('pending', 'confirmed')).exists():
+            messages.error(request, 'Нельзя удалить животное с активными бронированиями.')
         else:
             name = animal.name
             animal.delete()
