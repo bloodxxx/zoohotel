@@ -92,14 +92,18 @@
   const burger = document.getElementById('burger-btn');
   const navLinks = document.getElementById('nav-links');
   if (burger && navLinks) {
-    burger.addEventListener('click', () => {
+    burger.addEventListener('click', (e) => {
+      e.stopPropagation();
       navLinks.classList.toggle('open');
-      burger.classList.toggle('open');
     });
     navLinks.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
       navLinks.classList.remove('open');
-      burger.classList.remove('open');
     }));
+    document.addEventListener('click', (e) => {
+      if (!navLinks.contains(e.target) && e.target !== burger) {
+        navLinks.classList.remove('open');
+      }
+    });
   }
 </script>
 {% block extra_js %}{% endblock %}

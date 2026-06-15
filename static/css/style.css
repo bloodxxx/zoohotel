@@ -715,25 +715,16 @@ footer {
   background: none;
   border: 1.5px solid var(--border);
   cursor: pointer;
-  padding: .4rem .6rem;
+  padding: .4rem .65rem;
   border-radius: 8px;
   font-size: 1.1rem;
   color: var(--text);
   z-index: 1001;
   line-height: 1;
+  align-items: center;
+  justify-content: center;
 }
 .burger:hover { background: var(--bg); }
-.burger span {
-  display: block;
-  width: 24px;
-  height: 2px;
-  background: var(--text);
-  border-radius: 2px;
-  transition: all .2s;
-}
-.burger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-.burger.open span:nth-child(2) { opacity: 0; }
-.burger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
 @media (max-width: 1024px) {
   .sidebar { width: 210px; }
@@ -753,7 +744,7 @@ footer {
   .footer-grid { grid-template-columns: 1fr; }
   .footer-bottom { flex-direction: column; gap: .5rem; text-align: center; }
   .navbar-public { padding: 0 1rem; }
-  .burger { display: flex; }
+  .burger { display: inline-flex; }
   .nav-links {
     display: none;
     position: fixed;
