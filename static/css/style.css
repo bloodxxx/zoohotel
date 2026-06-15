@@ -54,13 +54,13 @@ a:hover { color: var(--primary-dark); }
   box-shadow: 0 2px 20px rgba(0,0,0,.06);
 }
 .navbar-public .navbar-collapse {
-  background: #fff;
+  background: #fff !important;
   border-top: 1px solid var(--border);
   padding: .5rem 0;
 }
 @media (min-width: 992px) {
   .navbar-public .navbar-collapse {
-    background: transparent;
+    background: transparent !important;
     border-top: none;
     padding: 0;
   }

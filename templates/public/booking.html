@@ -99,6 +99,11 @@
 
 .booking-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; align-items: start; }
 .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 768px) {
+  .booking-layout { grid-template-columns: 1fr; }
+  .booking-calc { position: static !important; order: -1; margin-bottom: 1rem; }
+  .form-row-2 { grid-template-columns: 1fr; }
+}
 </style>
 {% endblock %}
 
