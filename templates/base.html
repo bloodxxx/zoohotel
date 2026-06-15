@@ -8,36 +8,41 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="{% static 'css/style.css' %}">
 {% block extra_css %}{% endblock %}
 </head>
 <body>
 
-<nav class="navbar-public">
-  <a href="{% url 'home' %}" class="navbar-brand">
-    <i class="fa-solid fa-paw"></i> ZooHotel
-  </a>
-  <button class="burger" id="burger-btn" aria-label="Меню">
-    <i class="fa-solid fa-ellipsis-vertical"></i>
-  </button>
-  <ul class="nav-links" id="nav-links">
-    <li><a href="{% url 'home' %}" {% if request.resolver_match.url_name == 'home' %}class="active"{% endif %}>Главная</a></li>
-    <li><a href="{% url 'rooms' %}" {% if request.resolver_match.url_name == 'rooms' %}class="active"{% endif %}>Номера</a></li>
-    <li><a href="{% url 'services' %}" {% if request.resolver_match.url_name == 'services' %}class="active"{% endif %}>Услуги</a></li>
-    <li><a href="{% url 'booking' %}" {% if request.resolver_match.url_name == 'booking' %}class="active"{% endif %}>Бронирование</a></li>
-    {% if user.is_authenticated %}
-      {% if user.role == 'admin' or user.role == 'manager' %}
-        <li><a href="{% url 'admin_dashboard' %}"><i class="fa-solid fa-gauge"></i> Панель</a></li>
-      {% elif user.role == 'caretaker' %}
-        <li><a href="{% url 'caretaker_tasks' %}"><i class="fa-solid fa-list-check"></i> Задачи</a></li>
-      {% else %}
-        <li><a href="{% url 'cabinet_profile' %}"><i class="fa-regular fa-user"></i> Кабинет</a></li>
-      {% endif %}
-      <li><a href="{% url 'logout' %}" class="btn-nav"><i class="fa-solid fa-right-from-bracket"></i> Выйти</a></li>
-    {% else %}
-      <li><a href="{% url 'login' %}" class="btn-nav"><i class="fa-solid fa-right-to-bracket"></i> Войти</a></li>
-    {% endif %}
-  </ul>
+<nav class="navbar navbar-expand-lg navbar-public">
+  <div class="container-fluid px-3 px-md-4">
+    <a href="{% url 'home' %}" class="navbar-brand">
+      <i class="fa-solid fa-paw"></i> ZooHotel
+    </a>
+    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Меню">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="mainNav">
+      <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+        <li class="nav-item"><a href="{% url 'home' %}" class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">Главная</a></li>
+        <li class="nav-item"><a href="{% url 'rooms' %}" class="nav-link {% if request.resolver_match.url_name == 'rooms' %}active{% endif %}">Номера</a></li>
+        <li class="nav-item"><a href="{% url 'services' %}" class="nav-link {% if request.resolver_match.url_name == 'services' %}active{% endif %}">Услуги</a></li>
+        <li class="nav-item"><a href="{% url 'booking' %}" class="nav-link {% if request.resolver_match.url_name == 'booking' %}active{% endif %}">Бронирование</a></li>
+        {% if user.is_authenticated %}
+          {% if user.role == 'admin' or user.role == 'manager' %}
+            <li class="nav-item"><a href="{% url 'admin_dashboard' %}" class="nav-link"><i class="fa-solid fa-gauge"></i> Панель</a></li>
+          {% elif user.role == 'caretaker' %}
+            <li class="nav-item"><a href="{% url 'caretaker_tasks' %}" class="nav-link"><i class="fa-solid fa-list-check"></i> Задачи</a></li>
+          {% else %}
+            <li class="nav-item"><a href="{% url 'cabinet_profile' %}" class="nav-link"><i class="fa-regular fa-user"></i> Кабинет</a></li>
+          {% endif %}
+          <li class="nav-item"><a href="{% url 'logout' %}" class="btn-nav nav-link">Выйти</a></li>
+        {% else %}
+          <li class="nav-item"><a href="{% url 'login' %}" class="btn-nav nav-link">Войти</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
 </nav>
 
 <div style="min-height:calc(100vh - 68px); display:flex; flex-direction:column;">
@@ -87,25 +92,8 @@
 </footer>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{% static 'js/main.js' %}"></script>
-<script>
-  const burger = document.getElementById('burger-btn');
-  const navLinks = document.getElementById('nav-links');
-  if (burger && navLinks) {
-    burger.addEventListener('click', (e) => {
-      e.stopPropagation();
-      navLinks.classList.toggle('open');
-    });
-    navLinks.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
-      navLinks.classList.remove('open');
-    }));
-    document.addEventListener('click', (e) => {
-      if (!navLinks.contains(e.target) && e.target !== burger) {
-        navLinks.classList.remove('open');
-      }
-    });
-  }
-</script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>

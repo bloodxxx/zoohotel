@@ -43,21 +43,18 @@ a:hover { color: var(--primary-dark); }
 
 /* ── NAVBAR ───────────────────────────────── */
 .navbar-public {
-  background: rgba(255,255,255,.92);
+  background: rgba(255,255,255,.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(0,0,0,.06);
-  padding: 0 2.5rem;
-  height: 70px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  min-height: 70px;
   position: sticky;
   top: 0;
   z-index: 1000;
   box-shadow: 0 2px 20px rgba(0,0,0,.06);
-  width: 100%;
-  box-sizing: border-box;
+}
+.navbar-public .navbar-collapse {
+  background: rgba(255,255,255,.98);
 }
 .navbar-brand {
   font-size: 1.35rem;
@@ -69,28 +66,26 @@ a:hover { color: var(--primary-dark); }
   letter-spacing: -.3px;
 }
 .navbar-brand i { font-size: 1.5rem; }
-.nav-links { display: flex; align-items: center; gap: .1rem; list-style: none; }
-.nav-links a {
+.navbar-public .nav-link {
   padding: .45rem 1rem;
   border-radius: 8px;
-  color: var(--text);
+  color: var(--text) !important;
   font-weight: 500;
   font-size: .88rem;
   transition: background .15s, color .15s;
-  letter-spacing: -.1px;
 }
-.nav-links a:hover { background: var(--primary-light); color: var(--primary); }
-.nav-links a.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
-.nav-links .btn-nav {
-  background: var(--primary);
+.navbar-public .nav-link:hover,
+.navbar-public .nav-link.active { background: var(--primary-light); color: var(--primary) !important; font-weight: 600; }
+.navbar-public .btn-nav {
+  background: var(--primary) !important;
   color: var(--white) !important;
-  padding: .45rem 1.2rem;
-  border-radius: 50px;
-  margin-left: .5rem;
+  padding: .45rem 1.2rem !important;
+  border-radius: 50px !important;
   font-weight: 600;
   box-shadow: 0 2px 8px rgba(26,107,71,.3);
 }
-.nav-links .btn-nav:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26,107,71,.4); }
+.navbar-public .btn-nav:hover { background: var(--primary-dark) !important; }
+.navbar-toggler:focus { box-shadow: none; }
 
 /* ── HERO ──────────────────────────────────── */
 .hero {
@@ -709,22 +704,6 @@ footer {
 .layout-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
 .form-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
-/* Burger button */
-.burger {
-  display: none;
-  background: none;
-  border: 1.5px solid var(--border);
-  cursor: pointer;
-  padding: .4rem .65rem;
-  border-radius: 8px;
-  font-size: 1.1rem;
-  color: var(--text);
-  z-index: 1001;
-  line-height: 1;
-  align-items: center;
-  justify-content: center;
-}
-.burger:hover { background: var(--bg); }
 
 @media (max-width: 1024px) {
   .sidebar { width: 210px; }
@@ -743,27 +722,6 @@ footer {
   .hero h1 { font-size: 2rem; }
   .footer-grid { grid-template-columns: 1fr; }
   .footer-bottom { flex-direction: column; gap: .5rem; text-align: center; }
-  .navbar-public { padding: 0 1rem; }
-  .burger { display: inline-flex; }
-  .nav-links {
-    display: none;
-    position: fixed;
-    top: 70px;
-    right: 1rem;
-    left: auto;
-    width: 220px;
-    background: #fff;
-    flex-direction: column;
-    padding: .5rem;
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    box-shadow: 0 8px 24px rgba(0,0,0,.12);
-    z-index: 999;
-    gap: 0;
-  }
-  .nav-links.open { display: flex; }
-  .nav-links a { padding: .65rem 1rem; font-size: .9rem; border-radius: 8px; }
-  .nav-links .btn-nav { margin: .25rem 0 0; border-radius: 8px; text-align: center; justify-content: center; background: var(--primary-light); color: var(--primary) !important; box-shadow: none; }
 
   /* Таблицы — горизонтальный скролл */
   .table-card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -778,11 +736,6 @@ footer {
   .section-title { font-size: 1.65rem; }
   .cabinet-layout { flex-direction: column; gap: 1rem; }
   .cabinet-aside { width: 100%; }
-
-  /* Инлайн-гриды в шаблонах */
-  .mobile-col { flex-direction: column !important; }
-  .mobile-full { width: 100% !important; grid-template-columns: 1fr !important; }
-  .mobile-sticky-off { position: static !important; }
 
   /* Форма бронирования */
   .booking-layout { grid-template-columns: 1fr !important; }
