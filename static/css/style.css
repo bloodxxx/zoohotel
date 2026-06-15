@@ -35,6 +35,7 @@ body {
   font-size: 15px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 a { color: var(--primary); text-decoration: none; }
@@ -55,6 +56,8 @@ a:hover { color: var(--primary-dark); }
   top: 0;
   z-index: 1000;
   box-shadow: 0 2px 20px rgba(0,0,0,.06);
+  width: 100%;
+  box-sizing: border-box;
 }
 .navbar-brand {
   font-size: 1.35rem;
@@ -750,7 +753,7 @@ footer {
   .burger { display: flex; }
   .nav-links {
     display: none;
-    position: absolute;
+    position: fixed;
     top: 70px;
     left: 0;
     right: 0;
