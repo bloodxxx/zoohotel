@@ -14,6 +14,7 @@ urlpatterns = [
     path('booking/success/', pub.booking_success, name='booking_success'),
     path('booking/pay/<int:payment_pk>/', pub.booking_pay_online, name='booking_pay_online'),
     path('booking/payment/return/', pub.booking_payment_return, name='booking_payment_return'),
+    path('booking/<int:booking_pk>/cancel/', pub.booking_cancel_guest, name='booking_cancel_guest'),
     path('login/', pub.login_view, name='login'),
     path('logout/', pub.logout_view, name='logout'),
     path('register/', pub.register_view, name='register'),

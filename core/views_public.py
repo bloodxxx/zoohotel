@@ -230,8 +230,62 @@ def booking_payment_return(request):
                     pass
         except Payment.DoesNotExist:
             pass
+        # store payment pk in session so cancel page is accessible
+        if payment:
+            request.session['last_booking_pk'] = payment.booking.pk
 
     return render(request, 'public/booking_payment_return.html', {'payment': payment})
+
+
+def booking_cancel_guest(request, booking_pk):
+    """Отмена бронирования гостем + возврат через ЮKassa если оплачено."""
+    import uuid
+    from yookassa import Configuration, Payment as YooPayment, Refund
+    from django.conf import settings
+
+    session_booking_pk = request.session.get('last_booking_pk')
+    if str(session_booking_pk) != str(booking_pk):
+        messages.error(request, 'Нет доступа к этому бронированию.')
+        return redirect('home')
+
+    booking = get_object_or_404(Booking, pk=booking_pk)
+
+    if booking.status not in ('pending', 'confirmed'):
+        messages.error(request, 'Это бронирование нельзя отменить.')
+        return redirect('home')
+
+    if request.method == 'POST':
+        payment = booking.payments.filter(status='paid').first()
+        refund_error = None
+
+        if payment and payment.yookassa_payment_id:
+            Configuration.account_id = settings.YOOKASSA_SHOP_ID
+            Configuration.secret_key = settings.YOOKASSA_SECRET_KEY
+            try:
+                Refund.create({
+                    'amount': {'value': f'{payment.amount:.2f}', 'currency': 'RUB'},
+                    'payment_id': payment.yookassa_payment_id,
+                }, idempotency_key=str(uuid.uuid4()))
+                payment.status = 'refunded'
+                payment.save(update_fields=['status'])
+            except Exception as e:
+                refund_error = str(e)
+
+        booking.status = 'cancelled'
+        booking.save(update_fields=['status'])
+        log_action(request, f'Гость отменил бронирование #{booking_pk}', 'Booking', booking_pk)
+        del request.session['last_booking_pk']
+
+        if refund_error:
+            messages.warning(request, f'Бронирование #{booking_pk} отменено, но возврат не удался — свяжитесь с нами.')
+        else:
+            msg = f'Бронирование #{booking_pk} отменено.'
+            if payment and payment.status == 'refunded':
+                msg += ' Возврат средств будет обработан в течение нескольких дней.'
+            messages.success(request, msg)
+        return redirect('home')
+
+    return render(request, 'public/booking_cancel_guest.html', {'booking': booking})
 
 
 def login_view(request):

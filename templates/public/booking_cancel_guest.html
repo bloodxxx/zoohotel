@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Отмена бронирования — ZooHotel{% endblock %}
+{% block content %}
+<div class="container" style="padding:4rem 1.5rem;text-align:center;">
+  <div style="width:80px;height:80px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;font-size:2rem;color:var(--danger);margin:0 auto 1.5rem;">
+    <i class="fa-solid fa-triangle-exclamation"></i>
+  </div>
+  <h1 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Отменить бронирование #{{ booking.pk }}?</h1>
+  <div style="max-width:400px;margin:0 auto 1.5rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:1.25rem;font-size:.9rem;text-align:left;">
+    <div style="display:flex;justify-content:space-between;margin-bottom:.4rem;"><span style="color:var(--muted);">Животное</span><span>{{ booking.animal.name }}</span></div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:.4rem;"><span style="color:var(--muted);">Номер</span><span>{{ booking.room.name }}</span></div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:.4rem;"><span style="color:var(--muted);">Заезд</span><span>{{ booking.check_in_date|date:"d.m.Y" }}</span></div>
+    <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">Сумма</span><span>{{ booking.total_price|floatformat:0 }} ₽</span></div>
+  </div>
+  {% with payment=booking.payments.first %}
+  {% if payment and payment.status == 'paid' %}
+  <p style="color:var(--muted);max-width:460px;margin:0 auto 1.5rem;font-size:.9rem;">
+    Оплата будет возвращена на карту в течение нескольких рабочих дней.
+  </p>
+  {% endif %}
+  {% endwith %}
+  <form method="post" style="display:inline;">
+    {% csrf_token %}
+    <button type="submit" class="btn" style="background:var(--danger);color:#fff;margin-right:.75rem;">
+      <i class="fa-solid fa-xmark"></i> Да, отменить
+    </button>
+  </form>
+  <a href="javascript:history.back()" class="btn btn-outline">Назад</a>
+</div>
+{% endblock %}

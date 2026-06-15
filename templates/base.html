@@ -17,7 +17,10 @@
   <a href="{% url 'home' %}" class="navbar-brand">
     <i class="fa-solid fa-paw"></i> ZooHotel
   </a>
-  <ul class="nav-links">
+  <button class="burger" id="burger-btn" aria-label="Меню">
+    <span></span><span></span><span></span>
+  </button>
+  <ul class="nav-links" id="nav-links">
     <li><a href="{% url 'home' %}" {% if request.resolver_match.url_name == 'home' %}class="active"{% endif %}>Главная</a></li>
     <li><a href="{% url 'rooms' %}" {% if request.resolver_match.url_name == 'rooms' %}class="active"{% endif %}>Номера</a></li>
     <li><a href="{% url 'services' %}" {% if request.resolver_match.url_name == 'services' %}class="active"{% endif %}>Услуги</a></li>
@@ -85,6 +88,20 @@
 </div>
 
 <script src="{% static 'js/main.js' %}"></script>
+<script>
+  const burger = document.getElementById('burger-btn');
+  const navLinks = document.getElementById('nav-links');
+  if (burger && navLinks) {
+    burger.addEventListener('click', () => {
+      navLinks.classList.toggle('open');
+      burger.classList.toggle('open');
+    });
+    navLinks.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+      navLinks.classList.remove('open');
+      burger.classList.remove('open');
+    }));
+  }
+</script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>

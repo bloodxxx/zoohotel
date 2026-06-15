@@ -677,6 +677,42 @@ footer {
 .cabinet-sidebar-nav li a:hover { background: var(--primary-light); color: var(--primary); }
 .cabinet-sidebar-nav li a.active-link { background: var(--primary-light); color: var(--primary); font-weight: 600; }
 
+/* Cabinet layout */
+.cabinet-layout {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+.cabinet-aside {
+  width: 220px;
+  flex-shrink: 0;
+}
+
+/* Burger button */
+.burger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: .4rem;
+  z-index: 1001;
+}
+.burger span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+  transition: all .2s;
+}
+.burger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.burger.open span:nth-child(2) { opacity: 0; }
+.burger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
 @media (max-width: 1024px) {
   .sidebar { width: 210px; }
   .admin-content { margin-left: 210px; }
@@ -693,8 +729,23 @@ footer {
   .hero h1 { font-size: 2.2rem; }
   .footer-grid { grid-template-columns: 1fr; }
   .navbar-public { padding: 0 1.25rem; }
-  .nav-links { gap: 0; }
-  .nav-links a { padding: .35rem .65rem; font-size: .8rem; }
+  .burger { display: flex; }
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 70px;
+    left: 0;
+    right: 0;
+    background: #fff;
+    flex-direction: column;
+    padding: .75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 4px 12px rgba(0,0,0,.08);
+    z-index: 999;
+    gap: 0;
+  }
+  .nav-links.open { display: flex; }
+  .nav-links a { padding: .6rem 1rem; font-size: .9rem; }
   table { font-size: .8rem; }
   thead th, tbody td { padding: .5rem .75rem; }
   .room-detail-gallery { grid-template-columns: 1fr; }
@@ -702,4 +753,6 @@ footer {
   .room-detail-main-img { height: 230px; font-size: 4rem; }
   .hero { padding: 4rem 1.5rem 3.5rem; }
   .section { padding: 3rem 0; }
+  .cabinet-layout { flex-direction: column; gap: 1rem; }
+  .cabinet-aside { width: 100%; }
 }

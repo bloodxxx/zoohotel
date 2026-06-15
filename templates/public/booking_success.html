@@ -52,6 +52,9 @@
       <div style="text-align:center;margin-top:1rem;">
         <a href="{% url 'home' %}" style="color:var(--muted);font-size:.85rem;">Пропустить, выбрать позже</a>
       </div>
+      <div style="text-align:center;margin-top:.75rem;">
+        <a href="{% url 'booking_cancel_guest' booking.pk %}" style="color:var(--danger);font-size:.85rem;">Отменить бронирование</a>
+      </div>
     </div>
 
   {% else %}
