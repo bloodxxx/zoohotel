@@ -77,7 +77,7 @@
   {% if rebook %}Повторное бронирование{% else %}Новое бронирование{% endif %}
 </h2>
 
-<div style="display:grid;grid-template-columns:1fr 280px;gap:1.5rem;align-items:start;">
+<div class="layout-sidebar-r">
   <form method="post" novalidate id="booking-form">
     {% csrf_token %}
 
@@ -97,7 +97,7 @@
     <div class="card mb-2">
       <div class="card-header"><i class="fa-regular fa-calendar" style="color:var(--primary);"></i> Даты проживания</div>
       <div class="card-body">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div class="form-2col">
           <div class="form-group" style="margin-bottom:0;">
             <label class="form-label">Дата и время заезда <span class="req">*</span></label>
             <div class="date-input-wrap">

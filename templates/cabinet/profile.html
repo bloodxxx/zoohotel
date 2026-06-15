@@ -7,7 +7,7 @@
   <div class="card-body">
     <form method="post" novalidate>
       {% csrf_token %}
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+      <div class="form-2col">
         {% for field in pform %}
         <div class="form-group">
           <label class="form-label">{{ field.label }}</label>

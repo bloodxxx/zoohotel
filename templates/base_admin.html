@@ -11,6 +11,7 @@
 {% block extra_css %}{% endblock %}
 </head>
 <body>
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
 <div class="admin-layout">
 
   <aside class="sidebar" id="sidebar">
@@ -61,7 +62,7 @@
 
   <div class="admin-content">
     <div class="admin-topbar">
-      <button id="sidebar-toggler" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#374151;display:none;">
+      <button id="sidebar-toggler" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#374151;display:none;padding:.25rem .5rem;border-radius:6px;">
         <i class="fa-solid fa-bars"></i>
       </button>
       <div style="font-weight:600;font-size:.95rem;">{% block topbar_title %}Панель управления{% endblock %}</div>
@@ -86,6 +87,29 @@
 </div>
 {% load static %}
 <script src="{% static 'js/main.js' %}"></script>
+<script>
+(function() {
+  var toggler = document.getElementById('sidebar-toggler');
+  var sidebar = document.getElementById('sidebar');
+  var overlay = document.getElementById('sidebar-overlay');
+  if (!toggler || !sidebar) return;
+  function openSidebar() {
+    sidebar.classList.add('open');
+    overlay.style.display = 'block';
+  }
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    overlay.style.display = 'none';
+  }
+  toggler.addEventListener('click', function() {
+    sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+  });
+  overlay.addEventListener('click', closeSidebar);
+  sidebar.querySelectorAll('a').forEach(function(a) {
+    a.addEventListener('click', function() { if (window.innerWidth <= 768) closeSidebar(); });
+  });
+})();
+</script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>

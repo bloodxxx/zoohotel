@@ -13,12 +13,10 @@
 .flatpickr-weekday { color: var(--muted); font-weight: 600; }
 .flatpickr-day.inRange { background: var(--primary-light); border-color: var(--primary-light); color: var(--primary); }
 
-/* Date input custom look */
 .date-input-wrap { position: relative; }
 .date-input-wrap i { position: absolute; left: .75rem; top: 50%; transform: translateY(-50%); color: var(--primary); pointer-events: none; font-size: .95rem; }
 .date-input-wrap .form-control { padding-left: 2.2rem; }
 
-/* Room selection cards */
 .room-select-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .75rem; margin-top: .5rem; }
 .room-radio { display: none; }
 .room-select-card {
@@ -54,7 +52,6 @@
 .room-card-type { font-size: .75rem; color: var(--muted); margin: .1rem 0 .4rem; }
 .room-card-price { font-size: .95rem; font-weight: 700; color: var(--primary); }
 
-/* Service cards */
 .svc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: .6rem; margin-top: .5rem; }
 .svc-check-input { display: none; }
 .svc-card {
@@ -99,6 +96,9 @@
 }
 .svc-card-name { font-size: .84rem; font-weight: 600; color: var(--dark); line-height: 1.3; }
 .svc-card-price { font-size: .78rem; color: var(--primary); font-weight: 700; margin-top: .15rem; }
+
+.booking-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; align-items: start; }
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 </style>
 {% endblock %}
 
@@ -107,7 +107,7 @@
   <h1 class="page-title"><i class="fa-solid fa-calendar-plus"></i> Онлайн-бронирование</h1>
   <p style="color:var(--muted);margin-bottom:2rem;">Заполните форму и мы свяжемся с вами для подтверждения</p>
 
-  <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;align-items:start;">
+  <div class="booking-layout">
     <div>
       <form method="post" novalidate id="booking-form">
         {% csrf_token %}
@@ -116,7 +116,7 @@
         <div class="card mb-2">
           <div class="card-header"><i class="fa-regular fa-user" style="color:var(--primary);"></i> Ваши данные</div>
           <div class="card-body">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="form-row-2">
               {% for field in form %}{% if field.name in 'full_name,phone,email' %}
               <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">{{ field.label }}{% if field.field.required %}<span class="req">*</span>{% endif %}</label>
@@ -132,7 +132,7 @@
         <div class="card mb-2">
           <div class="card-header"><i class="fa-solid fa-paw" style="color:var(--primary);"></i> Питомец</div>
           <div class="card-body">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="form-row-2">
               {% for field in form %}{% if field.name in 'animal_name,animal_species,animal_breed,special_needs' %}
               <div class="form-group" style="margin-bottom:0;{% if field.name == 'special_needs' %}grid-column:1/-1;{% endif %}">
                 <label class="form-label">{{ field.label }}{% if field.field.required %}<span class="req">*</span>{% endif %}</label>
@@ -148,7 +148,7 @@
         <div class="card mb-2">
           <div class="card-header"><i class="fa-regular fa-calendar" style="color:var(--primary);"></i> Даты проживания</div>
           <div class="card-body">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="form-row-2">
               <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Дата и время заезда <span class="req">*</span></label>
                 <div class="date-input-wrap">
@@ -240,7 +240,7 @@
     </div>
 
     <!-- Sticky price calculator -->
-    <div style="position:sticky;top:84px;">
+    <div class="booking-calc" style="position:sticky;top:84px;">
       <div class="card">
         <div class="card-header"><i class="fa-solid fa-calculator" style="color:var(--primary);"></i> Стоимость</div>
         <div class="card-body">

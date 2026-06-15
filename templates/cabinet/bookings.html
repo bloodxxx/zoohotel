@@ -56,7 +56,7 @@
         </div>
         {% endif %}
       </div>
-      <div style="display:flex;flex-direction:column;gap:.4rem;align-items:flex-end;">
+      <div class="booking-actions" style="display:flex;flex-direction:column;gap:.4rem;align-items:flex-end;">
         {% with payment=booking.payments.first %}
           {% if payment and payment.status == 'paid' %}
           <span class="btn btn-sm" style="background:#d1fae5;color:#065f46;cursor:default;"><i class="fa-solid fa-check"></i> Оплачено</span>

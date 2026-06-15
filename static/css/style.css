@@ -690,6 +690,22 @@ footer {
   flex-shrink: 0;
 }
 
+/* Sidebar overlay for mobile */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 199;
+}
+
+/* Responsive grid helpers */
+.layout-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.layout-sidebar-r { display: grid; grid-template-columns: 1fr 320px; gap: 1.5rem; align-items: start; }
+.layout-sidebar-l { display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem; }
+.layout-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
+.form-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
 /* Burger button */
 .burger {
   display: none;
@@ -724,11 +740,13 @@ footer {
 @media (max-width: 768px) {
   .sidebar { transform: translateX(-100%); transition: transform .25s; }
   .sidebar.open { transform: translateX(0); }
+  .sidebar-overlay { display: block !important; }
   .admin-content { margin-left: 0; }
   .grid-3, .grid-2, .grid-4 { grid-template-columns: 1fr; }
-  .hero h1 { font-size: 2.2rem; }
+  .hero h1 { font-size: 2rem; }
   .footer-grid { grid-template-columns: 1fr; }
-  .navbar-public { padding: 0 1.25rem; }
+  .footer-bottom { flex-direction: column; gap: .5rem; text-align: center; }
+  .navbar-public { padding: 0 1rem; }
   .burger { display: flex; }
   .nav-links {
     display: none;
@@ -746,13 +764,52 @@ footer {
   }
   .nav-links.open { display: flex; }
   .nav-links a { padding: .6rem 1rem; font-size: .9rem; }
-  table { font-size: .8rem; }
+  .nav-links .btn-nav { margin: .35rem 0 0; border-radius: 8px; text-align: center; justify-content: center; }
+
+  /* Таблицы — горизонтальный скролл */
+  .table-card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { font-size: .8rem; min-width: 520px; }
   thead th, tbody td { padding: .5rem .75rem; }
+
   .room-detail-gallery { grid-template-columns: 1fr; }
   .room-detail-thumbs { flex-direction: row; height: 80px; }
   .room-detail-main-img { height: 230px; font-size: 4rem; }
-  .hero { padding: 4rem 1.5rem 3.5rem; }
+  .hero { padding: 4rem 1rem 3rem; }
   .section { padding: 3rem 0; }
+  .section-title { font-size: 1.65rem; }
   .cabinet-layout { flex-direction: column; gap: 1rem; }
   .cabinet-aside { width: 100%; }
+
+  /* Инлайн-гриды в шаблонах */
+  .mobile-col { flex-direction: column !important; }
+  .mobile-full { width: 100% !important; grid-template-columns: 1fr !important; }
+  .mobile-sticky-off { position: static !important; }
+
+  /* Форма бронирования */
+  .booking-layout { grid-template-columns: 1fr !important; }
+  .booking-calc { position: static !important; order: -1; margin-bottom: 1rem; }
+  .form-row-2 { grid-template-columns: 1fr !important; }
+
+  /* Responsive grid helpers */
+  .layout-2col, .layout-sidebar-r, .layout-sidebar-l, .layout-2-1 { grid-template-columns: 1fr !important; }
+  .form-2col { grid-template-columns: 1fr !important; }
+  .layout-sidebar-r > :last-child { order: -1; }
+
+  /* Admin topbar */
+  #sidebar-toggler { display: inline-flex !important; }
+  .admin-topbar { padding: .75rem 1rem; }
+  .admin-page { padding: 1rem; }
+
+  /* Cabinet bookings actions */
+  .booking-actions { flex-direction: row !important; flex-wrap: wrap; align-items: flex-start !important; width: 100%; justify-content: flex-start !important; margin-top: .75rem; }
+
+  /* Info rows */
+  .info-row { flex-wrap: wrap; }
+  .info-row .label { width: 120px; }
+
+  /* Stat cards — 2 колонки на мобиле */
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+
+  /* Модалки */
+  .modal-box { margin: 1rem; width: calc(100% - 2rem); }
 }

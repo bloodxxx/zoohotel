@@ -7,7 +7,7 @@
   <div class="card-body">
     <form method="post" novalidate>
       {% csrf_token %}
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+      <div class="form-2col">
         {% for field in form %}
         <div class="form-group" style="{% if field.name in 'role,is_blocked' %}grid-column:1/-1;{% endif %}">
           <label class="form-label">{{ field.label }}</label>
