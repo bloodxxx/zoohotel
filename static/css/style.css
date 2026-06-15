@@ -43,7 +43,7 @@ a:hover { color: var(--primary-dark); }
 
 /* ── NAVBAR ───────────────────────────────── */
 .navbar-public {
-  background: rgba(255,255,255,.95);
+  background: rgba(255,255,255,.97);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(0,0,0,.06);
@@ -57,6 +57,16 @@ a:hover { color: var(--primary-dark); }
   background: #fff !important;
   border-top: 1px solid var(--border);
   padding: .5rem 0;
+}
+@media (max-width: 991px) {
+  .navbar-public .navbar-collapse {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 999;
+    box-shadow: 0 8px 20px rgba(0,0,0,.1);
+  }
 }
 @media (min-width: 992px) {
   .navbar-public .navbar-collapse {
