@@ -42,44 +42,7 @@ a { color: var(--primary); text-decoration: none; }
 a:hover { color: var(--primary-dark); }
 
 /* ── NAVBAR ───────────────────────────────── */
-.navbar-public {
-  background: #fff;
-  border-bottom: 1px solid rgba(0,0,0,.06);
-  min-height: 70px;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  box-shadow: 0 2px 20px rgba(0,0,0,.06);
-}
-@media (min-width: 992px) {
-  .navbar-public {
-    background: rgba(255,255,255,.95);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-  }
-}
-.navbar-public .navbar-collapse {
-  background: #fff;
-  border-top: 1px solid var(--border);
-  padding: .5rem 0;
-}
-@media (max-width: 991px) {
-  .navbar-public .navbar-collapse {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    z-index: 999;
-    box-shadow: 0 8px 20px rgba(0,0,0,.12);
-  }
-}
-@media (min-width: 992px) {
-  .navbar-public .navbar-collapse {
-    background: transparent;
-    border-top: none;
-    padding: 0;
-  }
-}
+/* Navbar positioning/background moved inline to base.html <head> */
 .navbar-brand {
   font-size: 1.35rem;
   font-weight: 800;
